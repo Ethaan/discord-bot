@@ -1,0 +1,19 @@
+# Git
+.git
+.gitignore
+
+# Development
+.air.toml
+.mise.toml
+.env
+.env.example
+docker-compose.yml
+tmp/
+bin/
+
+# IDE
+.qodo
+.DS_Store
+
+# Documentation
+README.md
