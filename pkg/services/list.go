@@ -177,3 +177,36 @@ func (s *ListService) AddItem(input AddItemInput) (*database.ListItem, error) {
 
 	return item, nil
 }
+
+type ListItemWithMetadata struct {
+	ID        uint
+	ListID    uint
+	Name      string
+	Metadata  map[string]interface{}
+	CreatedAt string
+}
+
+func (s *ListService) GetListItems(listID uint) ([]ListItemWithMetadata, error) {
+	items, err := s.itemRepo.FindByListID(listID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch items: %w", err)
+	}
+
+	result := make([]ListItemWithMetadata, len(items))
+	for i, item := range items {
+		var metadata map[string]interface{}
+		if err := json.Unmarshal(item.Metadata, &metadata); err != nil {
+			metadata = make(map[string]interface{})
+		}
+
+		result[i] = ListItemWithMetadata{
+			ID:        item.ID,
+			ListID:    item.ListID,
+			Name:      item.Name,
+			Metadata:  metadata,
+			CreatedAt: item.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	return result, nil
+}

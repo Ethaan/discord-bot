@@ -236,6 +236,74 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	})
 }
 
+func ListCommand() *Command {
+	return &Command{
+		Name:        "list",
+		Description: "Show all items in this monitoring list",
+		Handler:     handleList,
+	}
+}
+
+func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	items, err := listService.GetListItems(list.ID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("❌ Failed to fetch list items: %v", err),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	if len(items) == 0 {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "📋 This list is empty. Use `/add` to add characters.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	var content string
+	content = fmt.Sprintf("📋 **%s** (%s)\n\n", list.Name, list.Type)
+
+	for _, item := range items {
+		switch list.Type {
+		case "premium-alerts":
+			status := "🔴 FREE ACCOUNT"
+			if isPremium, exists := item.Metadata["premium_status"].(bool); exists && isPremium {
+				status = "✅ PREMIUM"
+			}
+			content += fmt.Sprintf("**%s**: %s\n", item.Name, status)
+		default:
+			content += fmt.Sprintf("• **%s**\n", item.Name)
+		}
+	}
+
+	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+		},
+	})
+}
+
 func AddExpLockCommand() *Command {
 	return &Command{
 		Name:        "add-exp-lock",
