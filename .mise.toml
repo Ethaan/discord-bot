@@ -1,0 +1,45 @@
+[tools]
+go = "1.21"
+
+[tasks.dev]
+description = "Run the Discord bot in development mode with hot reload"
+run = "go run github.com/air-verse/air@latest"
+
+[tasks.bot]
+description = "Run the Discord bot"
+run = "go run cmd/bot/main.go"
+
+[tasks.build]
+description = "Build the Discord bot binary"
+run = "go build -o bin/bot cmd/bot/main.go"
+
+[tasks.test]
+description = "Run tests"
+run = "go test -v ./..."
+
+[tasks.lint]
+description = "Run linter"
+run = "golangci-lint run"
+
+[tasks.tidy]
+description = "Tidy Go modules"
+run = "go mod tidy"
+
+[tasks.docker-up]
+description = "Start PostgreSQL database with Docker Compose"
+run = "docker-compose up -d"
+
+[tasks.docker-down]
+description = "Stop PostgreSQL database"
+run = "docker-compose down"
+
+[tasks.docker-logs]
+description = "View PostgreSQL logs"
+run = "docker-compose logs -f postgres"
+
+[tasks.docker-restart]
+description = "Restart PostgreSQL database"
+run = "docker-compose restart postgres"
+
+# Environment variables are loaded from .env file
+# See .env for configuration
