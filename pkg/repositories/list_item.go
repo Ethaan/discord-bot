@@ -19,6 +19,13 @@ func (r *ListItemRepository) Create(item *database.ListItem) error {
 	return r.db.Create(item).Error
 }
 
+func (r *ListItemRepository) BulkCreate(items []database.ListItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	return r.db.Create(&items).Error
+}
+
 func (r *ListItemRepository) FindByListID(listID uint) ([]database.ListItem, error) {
 	var items []database.ListItem
 	err := r.db.Where("list_id = ?", listID).Find(&items).Error

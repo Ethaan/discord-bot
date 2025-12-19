@@ -15,8 +15,8 @@ import (
 )
 
 type ListService struct {
-	repo         *repositories.ListRepository
-	itemRepo     *repositories.ListItemRepository
+	repo     *repositories.ListRepository
+	itemRepo *repositories.ListItemRepository
 }
 
 func NewListService() *ListService {
@@ -232,4 +232,76 @@ func (s *ListService) RemoveItem(input RemoveItemInput) error {
 	logger.Success("Removed '%s' from list (ID: %d)", input.Name, input.ListID)
 
 	return nil
+}
+
+type BatchAddResult struct {
+	Added      int
+	Duplicates int
+	Failed     int
+	Total      int
+}
+
+func (s *ListService) BatchAddItems(listID uint, names []string) (*BatchAddResult, error) {
+	result := &BatchAddResult{
+		Total: len(names),
+	}
+
+	if len(names) == 0 {
+		return result, nil
+	}
+
+	list, err := s.repo.FindByID(listID)
+	if err != nil {
+		return nil, fmt.Errorf("list not found: %w", err)
+	}
+
+	existingItems, err := s.itemRepo.FindByListID(listID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch existing items: %w", err)
+	}
+
+	existingNames := make(map[string]bool)
+	for _, item := range existingItems {
+		existingNames[item.Name] = true
+	}
+
+	itemsToAdd := make([]database.ListItem, 0)
+	metadataJSON := []byte("{}")
+
+	for _, name := range names {
+		if existingNames[name] {
+			result.Duplicates++
+			continue
+		}
+
+		itemsToAdd = append(itemsToAdd, database.ListItem{
+			ListID:    listID,
+			ChannelID: list.ChannelID,
+			Name:      name,
+			Metadata:  metadataJSON,
+		})
+
+		existingNames[name] = true
+	}
+
+	chunkSize := 50
+	for i := 0; i < len(itemsToAdd); i += chunkSize {
+		end := i + chunkSize
+		if end > len(itemsToAdd) {
+			end = len(itemsToAdd)
+		}
+
+		chunk := itemsToAdd[i:end]
+		if err := s.itemRepo.BulkCreate(chunk); err != nil {
+			logger.Error("Failed to bulk create chunk: %v", err)
+			result.Failed += len(chunk)
+		} else {
+			result.Added += len(chunk)
+		}
+	}
+
+	logger.Success("Batch added %d items to list (ID: %d), %d duplicates, %d failed",
+		result.Added, listID, result.Duplicates, result.Failed)
+
+	return result, nil
 }

@@ -35,6 +35,20 @@ type Character struct {
 	Country   string `json:"country"`
 }
 
+type GuildMember struct {
+	Rank     string `json:"rank"`
+	Name     string `json:"name"`
+	Vocation string `json:"vocation"`
+	Level    int    `json:"level"`
+	Status   string `json:"status"`
+}
+
+type GuildResponse struct {
+	GuildID int           `json:"guild_id"`
+	Members []GuildMember `json:"members"`
+	Total   int           `json:"total"`
+}
+
 func (c *Client) GetCharacter(name string) (*Character, error) {
 	url := fmt.Sprintf("%s/characters/%s", c.baseURL, name)
 
@@ -54,4 +68,25 @@ func (c *Client) GetCharacter(name string) (*Character, error) {
 	}
 
 	return &character, nil
+}
+
+func (c *Client) GetGuildMembers(guildID int) (*GuildResponse, error) {
+	url := fmt.Sprintf("%s/guilds/%d", c.baseURL, guildID)
+
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch guild: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	var guild GuildResponse
+	if err := json.NewDecoder(resp.Body).Decode(&guild); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &guild, nil
 }

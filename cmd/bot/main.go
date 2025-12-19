@@ -44,6 +44,7 @@ func main() {
 	bot.RegisterCommand(discord.CreateListCommand())
 	bot.RegisterCommand(discord.CloseListCommand())
 	bot.RegisterCommand(discord.AddCommand())
+	bot.RegisterCommand(discord.AddByGuildCommand())
 	bot.RegisterCommand(discord.ListCommand())
 	bot.RegisterCommand(discord.RemoveCommand())
 

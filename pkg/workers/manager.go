@@ -23,6 +23,7 @@ func NewManager(session *discordgo.Session, tibiaAPIURL string) *Manager {
 	return &Manager{
 		workers: []Worker{
 			NewPremiumWorker(session, tibiaAPIURL),
+			NewResidenceWorker(session, tibiaAPIURL),
 		},
 	}
 }

@@ -2,16 +2,21 @@ package discord
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ethaan/discord-api/pkg/logger"
 	"github.com/ethaan/discord-api/pkg/services"
+	"github.com/ethaan/discord-api/pkg/tibia"
 )
 
 var validListTypes = []string{
 	"premium-alerts",
+	"residence-change",
 }
+
+const errNotMonitoringList = "❌ This channel is not a monitoring list. Use this command in a list channel."
 
 func PingCommand() *Command {
 	return &Command{
@@ -188,17 +193,17 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Content: errNotMonitoringList,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
 	}
 
-	if list.Type != "premium-alerts" {
+	if list.Type != "premium-alerts" && list.Type != "residence-change" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("❌ Use `/add-exp-lock` for %s lists", list.Type),
+				Content: fmt.Sprintf("❌ Command not available for this list type %s", list.Type),
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -231,10 +236,114 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("✅ Added **%s** to premium-alerts monitoring", name),
+			Content: fmt.Sprintf("✅ Added **%s** to %s monitoring", name, list.Type),
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
+}
+
+func AddByGuildCommand() *Command {
+	return &Command{
+		Name:        "add-by-guild",
+		Description: "Add all members from a guild to this monitoring list",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "guild-id",
+				Description: "Tibia guild ID",
+				Required:    true,
+			},
+		},
+		Handler: handleAddByGuild,
+	}
+}
+
+func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: errNotMonitoringList,
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	if list.Type != "premium-alerts" && list.Type != "residence-change" {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("❌ Command not available for this list type %s", list.Type),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	options := i.ApplicationCommandData().Options
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	for _, opt := range options {
+		optionMap[opt.Name] = opt
+	}
+
+	guildID := int(optionMap["guild-id"].IntValue())
+
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	tibiaAPIURL := os.Getenv("TIBIA_API_URL")
+	if tibiaAPIURL == "" {
+		tibiaAPIURL = "http://localhost:8080"
+	}
+
+	tibiaClient := tibia.NewClient(tibiaAPIURL)
+	guild, err := tibiaClient.GetGuildMembers(guildID)
+	if err != nil {
+		content := fmt.Sprintf("❌ Failed to fetch guild members: %v", err)
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	names := make([]string, len(guild.Members))
+	for idx, member := range guild.Members {
+		names[idx] = member.Name
+	}
+
+	result, err := listService.BatchAddItems(list.ID, names)
+	if err != nil {
+		content := fmt.Sprintf("❌ Failed to add guild members: %v", err)
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	// Build response message
+	content := fmt.Sprintf("✅ **Batch Add Complete**\n\n"+
+		"📊 **Summary:**\n"+
+		"• Total members: %d\n"+
+		"• Added: %d\n"+
+		"• Duplicates skipped: %d\n"+
+		"• Failed: %d",
+		result.Total, result.Added, result.Duplicates, result.Failed)
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: &content,
+	})
+
+	return err
 }
 
 func RemoveCommand() *Command {
@@ -264,7 +373,7 @@ func handleRemove(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Content: errNotMonitoringList,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -359,7 +468,7 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Content: errNotMonitoringList,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -401,6 +510,12 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 				}
 			}
 			content += fmt.Sprintf("**%s**: %s\n", item.Name, status)
+		case "residence-change":
+			residence := "⏳ PENDING"
+			if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
+				residence = currentResidence
+			}
+			content += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
 		default:
 			content += fmt.Sprintf("• **%s**\n", item.Name)
 		}
@@ -457,7 +572,7 @@ func handleAddExpLock(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Content: errNotMonitoringList,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
