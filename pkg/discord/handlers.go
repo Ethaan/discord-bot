@@ -200,7 +200,7 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		})
 	}
 
-	if list.Type != "premium-alerts" && list.Type != "residence-change" {
+	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -274,7 +274,7 @@ func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 		})
 	}
 
-	if list.Type != "premium-alerts" && list.Type != "residence-change" {
+	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -486,7 +486,7 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		})
 	}
 
-	if len(items) == 0 {
+	if len(items) == 0 && list.Type != "powergames-stats" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -498,26 +498,34 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	var description string
 
-	for _, item := range items {
-		switch list.Type {
-		case "premium-alerts":
-			status := "⏳ Pending"
-			if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
-				if isPremium {
-					status = "✅ Premium"
-				} else {
-					status = "🔴 Free"
+	// Special handling for powergames-stats - no items needed
+	if list.Type == "powergames-stats" {
+		description = "📊 Use `/stats` to view powergamer statistics.\n\n" +
+			"Available filters:\n" +
+			"• **days**: Choose time period (today, last2days, etc.)\n" +
+			"• **vocation**: Filter by vocation (sorcerers, druids, paladins, knights)"
+	} else {
+		for _, item := range items {
+			switch list.Type {
+			case "premium-alerts":
+				status := "⏳ Pending"
+				if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
+					if isPremium {
+						status = "✅ Premium"
+					} else {
+						status = "🔴 Free"
+					}
 				}
+				description += fmt.Sprintf("**%s**: %s\n", item.Name, status)
+			case "residence-change":
+				residence := "⏳ Pending"
+				if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
+					residence = currentResidence
+				}
+				description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
+			default:
+				description += fmt.Sprintf("• **%s**\n", item.Name)
 			}
-			description += fmt.Sprintf("**%s**: %s\n", item.Name, status)
-		case "residence-change":
-			residence := "⏳ Pending"
-			if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
-				residence = currentResidence
-			}
-			description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
-		default:
-			description += fmt.Sprintf("• **%s**\n", item.Name)
 		}
 	}
 
@@ -615,4 +623,202 @@ func handleAddExpLock(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 			Flags: discordgo.MessageFlagsEphemeral,
 		},
 	})
+}
+
+func StatsCommand() *Command {
+	return &Command{
+		Name:        "stats",
+		Description: "Show powergamer statistics",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "days",
+				Description: "Time period (default: today)",
+				Required:    false,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{Name: "Today", Value: "today"},
+					{Name: "Last Day", Value: "lastday"},
+					{Name: "Last 2 Days", Value: "last2days"},
+					{Name: "Last 3 Days", Value: "last3days"},
+					{Name: "Last 4 Days", Value: "last4days"},
+					{Name: "Last 5 Days", Value: "last5days"},
+					{Name: "Last 6 Days", Value: "last6days"},
+					{Name: "Last 7 Days", Value: "last7days"},
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "vocation",
+				Description: "Filter by vocation (default: all)",
+				Required:    false,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{Name: "All Vocations", Value: ""},
+					{Name: "No Vocation", Value: "0"},
+					{Name: "Sorcerers", Value: "1"},
+					{Name: "Druids", Value: "2"},
+					{Name: "Paladins", Value: "3"},
+					{Name: "Knights", Value: "4"},
+				},
+			},
+		},
+		Handler: handleStats,
+	}
+}
+
+func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: errNotMonitoringList,
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	if list.Type != "powergames-stats" {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ This command is only available in powergames-stats lists",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	// Defer the response since API call might take time
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Extract optional parameters
+	options := i.ApplicationCommandData().Options
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	for _, opt := range options {
+		optionMap[opt.Name] = opt
+	}
+
+	days := "today"
+	if daysOpt, ok := optionMap["days"]; ok {
+		days = daysOpt.StringValue()
+	}
+
+	vocation := ""
+	if vocationOpt, ok := optionMap["vocation"]; ok {
+		vocation = vocationOpt.StringValue()
+	}
+
+	// Fetch powergamers data
+	tibiaAPIURL := os.Getenv("TIBIA_API_URL")
+	if tibiaAPIURL == "" {
+		tibiaAPIURL = "http://localhost:8080"
+	}
+
+	tibiaClient := tibia.NewClient(tibiaAPIURL)
+	powergamers, err := tibiaClient.GetPowergamers(days, vocation, true)
+	if err != nil {
+		content := fmt.Sprintf("❌ Failed to fetch powergamer statistics: %v", err)
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	// Filter by list items if any characters are added
+	items, err := listService.GetListItems(list.ID)
+	if err == nil && len(items) > 0 {
+		// Create a map of character names in the list for fast lookup
+		listNames := make(map[string]bool)
+		for _, item := range items {
+			listNames[strings.ToLower(item.Name)] = true
+		}
+
+		// Filter powergamers to only include characters in the list
+		filtered := make([]tibia.Powergamer, 0)
+		for _, pg := range powergamers {
+			if listNames[strings.ToLower(pg.Name)] {
+				filtered = append(filtered, pg)
+			}
+		}
+		powergamers = filtered
+	}
+
+	if len(powergamers) == 0 {
+		content := "📊 No powergamers found for the selected filters."
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	// Build embed with statistics
+	var description strings.Builder
+	limit := 25
+	if len(powergamers) < limit {
+		limit = len(powergamers)
+	}
+
+	for i := 0; i < limit; i++ {
+		pg := powergamers[i]
+		description.WriteString(fmt.Sprintf("**%d. %s** (%s)\n", i+1, pg.Name, pg.Vocation))
+		description.WriteString(fmt.Sprintf("   Level: %d | Exp Gain: %d | Level Gain: %d\n\n", pg.Level, pg.ExperienceGain, pg.LevelGain))
+	}
+
+	// Map vocation code to name for title
+	vocationName := "All Vocations"
+	switch vocation {
+	case "0":
+		vocationName = "No Vocation"
+	case "1":
+		vocationName = "Sorcerers"
+	case "2":
+		vocationName = "Druids"
+	case "3":
+		vocationName = "Paladins"
+	case "4":
+		vocationName = "Knights"
+	}
+
+	// Map days to readable name
+	daysName := days
+	switch days {
+	case "today":
+		daysName = "Today"
+	case "lastday":
+		daysName = "Last Day"
+	case "last2days":
+		daysName = "Last 2 Days"
+	case "last3days":
+		daysName = "Last 3 Days"
+	case "last4days":
+		daysName = "Last 4 Days"
+	case "last5days":
+		daysName = "Last 5 Days"
+	case "last6days":
+		daysName = "Last 6 Days"
+	case "last7days":
+		daysName = "Last 7 Days"
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("📊 Powergamer Statistics - %s", daysName),
+		Description: description.String(),
+		Color:       0xFFD700, // Gold color
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("Vocation: %s • Showing top %d of %d", vocationName, limit, len(powergamers)),
+		},
+	}
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds: &[]*discordgo.MessageEmbed{embed},
+	})
+
+	return err
 }
