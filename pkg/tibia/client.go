@@ -15,7 +15,7 @@ type Client struct {
 func NewClient(baseURL string) *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 45 * time.Second, // Allow time for multi-page scraping (10 pages * 3s each + buffer)
 		},
 		baseURL: baseURL,
 	}
