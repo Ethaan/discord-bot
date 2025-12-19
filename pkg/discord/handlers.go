@@ -501,17 +501,17 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	for _, item := range items {
 		switch list.Type {
 		case "premium-alerts":
-			status := "⏳ PENDING"
+			status := "⏳ Pending"
 			if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
 				if isPremium {
-					status = "✅ PREMIUM"
+					status = "✅ Premium"
 				} else {
-					status = "🔴 FREE ACCOUNT"
+					status = "🔴 Free"
 				}
 			}
 			content += fmt.Sprintf("**%s**: %s\n", item.Name, status)
 		case "residence-change":
-			residence := "⏳ PENDING"
+			residence := "⏳ Pending"
 			if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
 				residence = currentResidence
 			}

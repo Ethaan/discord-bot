@@ -119,9 +119,33 @@ func (w *ResidenceWorker) updateMetadata(item *database.ListItem, metadata map[s
 }
 
 func (w *ResidenceWorker) sendNotification(list *database.List, item *database.ListItem, oldResidence, newResidence string) {
-	message := fmt.Sprintf("@everyone **%s** changed residence: %s → %s", item.Name, oldResidence, newResidence)
+	embed := &discordgo.MessageEmbed{
+		Title:       "🏠 Residence Changed",
+		Description: fmt.Sprintf("**%s** has moved to a new city!", item.Name),
+		Color:       0x3498DB, // Blue
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Previous Residence",
+				Value:  oldResidence,
+				Inline: true,
+			},
+			{
+				Name:   "New Residence",
+				Value:  newResidence,
+				Inline: true,
+			},
+		},
+		Timestamp: fmt.Sprintf("%d", time.Now().Unix()),
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Residence Alert",
+		},
+	}
 
-	_, err := w.session.ChannelMessageSend(list.ChannelID, message)
+	_, err := w.session.ChannelMessageSendComplex(list.ChannelID, &discordgo.MessageSend{
+		Content: "@everyone",
+		Embed:   embed,
+	})
+
 	if err != nil {
 		logger.Error("Error sending notification: %v", err)
 	}

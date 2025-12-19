@@ -119,14 +119,35 @@ func (w *PremiumWorker) updateMetadata(item *database.ListItem, metadata map[str
 }
 
 func (w *PremiumWorker) sendNotification(list *database.List, item *database.ListItem, isPremium bool) {
-	status := "🔴 Free Account"
+	var color int
+	var status string
+	var emoji string
+
 	if isPremium {
-		status = "✅ Premium Account"
+		color = 0x00FF00 // Green
+		status = "Premium Account"
+		emoji = "✅"
+	} else {
+		color = 0xFF0000 // Red
+		status = "Free Account"
+		emoji = "🔴"
 	}
 
-	message := fmt.Sprintf("@everyone **%s** status changed to %s", item.Name, status)
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s Premium Status Changed", emoji),
+		Description: fmt.Sprintf("**%s** is now a **%s**", item.Name, status),
+		Color:       color,
+		Timestamp:   fmt.Sprintf("%d", time.Now().Unix()),
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Premium Alert",
+		},
+	}
 
-	_, err := w.session.ChannelMessageSend(list.ChannelID, message)
+	_, err := w.session.ChannelMessageSendComplex(list.ChannelID, &discordgo.MessageSend{
+		Content: "@everyone",
+		Embed:   embed,
+	})
+
 	if err != nil {
 		logger.Error("Error sending notification: %v", err)
 	}
