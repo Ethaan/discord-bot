@@ -495,8 +495,7 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		})
 	}
 
-	var content string
-	content = fmt.Sprintf("📋 **%s** (%s)\n\n", list.Name, list.Type)
+	var description string
 
 	for _, item := range items {
 		switch list.Type {
@@ -509,22 +508,31 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 					status = "🔴 Free"
 				}
 			}
-			content += fmt.Sprintf("**%s**: %s\n", item.Name, status)
+			description += fmt.Sprintf("**%s**: %s\n", item.Name, status)
 		case "residence-change":
 			residence := "⏳ Pending"
 			if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
 				residence = currentResidence
 			}
-			content += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
+			description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
 		default:
-			content += fmt.Sprintf("• **%s**\n", item.Name)
+			description += fmt.Sprintf("• **%s**\n", item.Name)
 		}
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("📋 %s", list.Name),
+		Description: description,
+		Color:       0x5865F2, // Discord Blurple
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("List Type: %s • Total Items: %d", list.Type, len(items)),
+		},
 	}
 
 	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: content,
+			Embeds: []*discordgo.MessageEmbed{embed},
 		},
 	})
 }
