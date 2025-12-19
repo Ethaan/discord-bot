@@ -119,7 +119,7 @@ func (w *ResidenceWorker) updateMetadata(item *database.ListItem, metadata map[s
 }
 
 func (w *ResidenceWorker) sendNotification(list *database.List, item *database.ListItem, oldResidence, newResidence string) {
-	message := fmt.Sprintf("**%s** changed residence: %s → %s", item.Name, oldResidence, newResidence)
+	message := fmt.Sprintf("@everyone **%s** changed residence: %s → %s", item.Name, oldResidence, newResidence)
 
 	_, err := w.session.ChannelMessageSend(list.ChannelID, message)
 	if err != nil {

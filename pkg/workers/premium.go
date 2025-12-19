@@ -124,7 +124,7 @@ func (w *PremiumWorker) sendNotification(list *database.List, item *database.Lis
 		status = "✅ Premium Account"
 	}
 
-	message := fmt.Sprintf("**%s** status changed to %s", item.Name, status)
+	message := fmt.Sprintf("@everyone **%s** status changed to %s", item.Name, status)
 
 	_, err := w.session.ChannelMessageSend(list.ChannelID, message)
 	if err != nil {
