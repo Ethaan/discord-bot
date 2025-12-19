@@ -14,6 +14,7 @@ import (
 var validListTypes = []string{
 	"premium-alerts",
 	"residence-change",
+	"powergames-stats",
 }
 
 const errNotMonitoringList = "❌ This channel is not a monitoring list. Use this command in a list channel."
