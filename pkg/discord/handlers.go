@@ -286,9 +286,13 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	for _, item := range items {
 		switch list.Type {
 		case "premium-alerts":
-			status := "🔴 FREE ACCOUNT"
-			if isPremium, exists := item.Metadata["premium_status"].(bool); exists && isPremium {
-				status = "✅ PREMIUM"
+			status := "⏳ PENDING"
+			if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
+				if isPremium {
+					status = "✅ PREMIUM"
+				} else {
+					status = "🔴 FREE ACCOUNT"
+				}
 			}
 			content += fmt.Sprintf("**%s**: %s\n", item.Name, status)
 		default:
