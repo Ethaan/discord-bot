@@ -135,7 +135,7 @@ func (w *ResidenceWorker) sendNotification(list *database.List, item *database.L
 				Inline: true,
 			},
 		},
-		Timestamp: fmt.Sprintf("%d", time.Now().Unix()),
+		Timestamp: time.Now().Format(time.RFC3339),
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: "Residence Alert",
 		},
