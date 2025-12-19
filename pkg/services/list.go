@@ -210,3 +210,26 @@ func (s *ListService) GetListItems(listID uint) ([]ListItemWithMetadata, error) 
 
 	return result, nil
 }
+
+type RemoveItemInput struct {
+	ListID uint
+	Name   string
+}
+
+func (s *ListService) RemoveItem(input RemoveItemInput) error {
+	item, err := s.itemRepo.FindByName(input.ListID, input.Name)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("item '%s' not found in this list", input.Name)
+		}
+		return fmt.Errorf("failed to find item: %w", err)
+	}
+
+	if err := s.itemRepo.Delete(item); err != nil {
+		return fmt.Errorf("failed to delete item: %w", err)
+	}
+
+	logger.Success("Removed '%s' from list (ID: %d)", input.Name, input.ListID)
+
+	return nil
+}

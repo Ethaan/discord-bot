@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/ethaan/discord-api/pkg/logger"
@@ -234,6 +235,111 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
+}
+
+func RemoveCommand() *Command {
+	return &Command{
+		Name:        "remove",
+		Description: "Remove a character from this monitoring list",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:         discordgo.ApplicationCommandOptionString,
+				Name:         "name",
+				Description:  "Character name",
+				Required:     true,
+				Autocomplete: true,
+			},
+		},
+		Handler:             handleRemove,
+		AutocompleteHandler: handleRemoveAutocomplete,
+	}
+}
+
+func handleRemove(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ This channel is not a monitoring list. Use this command in a list channel.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	options := i.ApplicationCommandData().Options
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	for _, opt := range options {
+		optionMap[opt.Name] = opt
+	}
+
+	name := optionMap["name"].StringValue()
+
+	err = listService.RemoveItem(services.RemoveItemInput{
+		ListID: list.ID,
+		Name:   name,
+	})
+
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("❌ Failed to remove item: %v", err),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("✅ Removed **%s** from the monitoring list", name),
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
+func handleRemoveAutocomplete(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo.ApplicationCommandOptionChoice, error) {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return []*discordgo.ApplicationCommandOptionChoice{}, nil
+	}
+
+	items, err := listService.GetListItems(list.ID)
+	if err != nil {
+		return []*discordgo.ApplicationCommandOptionChoice{}, nil
+	}
+
+	options := i.ApplicationCommandData().Options
+	var focusedValue string
+	for _, opt := range options {
+		if opt.Focused {
+			focusedValue = strings.ToLower(opt.StringValue())
+			break
+		}
+	}
+
+	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0)
+	for _, item := range items {
+		if focusedValue == "" || strings.Contains(strings.ToLower(item.Name), focusedValue) {
+			choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+				Name:  item.Name,
+				Value: item.Name,
+			})
+
+			if len(choices) >= 25 {
+				break
+			}
+		}
+	}
+
+	return choices, nil
 }
 
 func ListCommand() *Command {

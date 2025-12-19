@@ -8,12 +8,14 @@ import (
 )
 
 type CommandHandler func(s *discordgo.Session, i *discordgo.InteractionCreate) error
+type AutocompleteHandler func(s *discordgo.Session, i *discordgo.InteractionCreate) ([]*discordgo.ApplicationCommandOptionChoice, error)
 
 type Command struct {
-	Name        string
-	Description string
-	Options     []*discordgo.ApplicationCommandOption
-	Handler     CommandHandler
+	Name                string
+	Description         string
+	Options             []*discordgo.ApplicationCommandOption
+	Handler             CommandHandler
+	AutocompleteHandler AutocompleteHandler
 }
 
 func (b *Bot) RegisterCommand(cmd *Command) {

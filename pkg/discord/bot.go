@@ -69,10 +69,15 @@ func (b *Bot) Stop() error {
 }
 
 func (b *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionApplicationCommand {
-		return
+	switch i.Type {
+	case discordgo.InteractionApplicationCommand:
+		b.handleCommand(s, i)
+	case discordgo.InteractionApplicationCommandAutocomplete:
+		b.handleAutocomplete(s, i)
 	}
+}
 
+func (b *Bot) handleCommand(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	for _, cmd := range b.commands {
 		if cmd.Name == i.ApplicationCommandData().Name {
 			if err := cmd.Handler(s, i); err != nil {
@@ -85,6 +90,34 @@ func (b *Bot) handleInteractionCreate(s *discordgo.Session, i *discordgo.Interac
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
+			}
+			return
+		}
+	}
+}
+
+func (b *Bot) handleAutocomplete(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	for _, cmd := range b.commands {
+		if cmd.Name == i.ApplicationCommandData().Name {
+			if cmd.AutocompleteHandler == nil {
+				return
+			}
+
+			choices, err := cmd.AutocompleteHandler(s, i)
+			if err != nil {
+				logger.Error("Error handling autocomplete for %s: %v", cmd.Name, err)
+				return
+			}
+
+			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+				Data: &discordgo.InteractionResponseData{
+					Choices: choices,
+				},
+			})
+
+			if err != nil {
+				logger.Error("Error responding to autocomplete: %v", err)
 			}
 			return
 		}
