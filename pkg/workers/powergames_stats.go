@@ -70,28 +70,35 @@ func (w *PowergamesStatsWorker) updateAllStats() {
 }
 
 func (w *PowergamesStatsWorker) updateChannelStats(list *database.List) error {
+	items, err := w.itemRepo.FindByListID(list.ID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch list items: %w", err)
+	}
+
+	if len(items) == 0 {
+		logger.Worker("powergames-stats", "Skipping channel %s (empty list)", list.ChannelID)
+		return nil
+	}
+
 	powergamers, err := w.tibiaClient.GetPowergamers("today", "", true)
 	if err != nil {
 		return fmt.Errorf("failed to fetch powergamers: %w", err)
 	}
 
-	items, err := w.itemRepo.FindByListID(list.ID)
-	if err == nil && len(items) > 0 {
-		listNames := make(map[string]bool)
-		for _, item := range items {
-			normalizedName := strings.TrimSpace(strings.ToLower(item.Name))
-			listNames[normalizedName] = true
-		}
-
-		filtered := make([]tibia.Powergamer, 0)
-		for _, pg := range powergamers {
-			normalizedPgName := strings.TrimSpace(strings.ToLower(pg.Name))
-			if listNames[normalizedPgName] {
-				filtered = append(filtered, pg)
-			}
-		}
-		powergamers = filtered
+	listNames := make(map[string]bool)
+	for _, item := range items {
+		normalizedName := strings.TrimSpace(strings.ToLower(item.Name))
+		listNames[normalizedName] = true
 	}
+
+	filtered := make([]tibia.Powergamer, 0)
+	for _, pg := range powergamers {
+		normalizedPgName := strings.TrimSpace(strings.ToLower(pg.Name))
+		if listNames[normalizedPgName] && pg.Today > 0 {
+			filtered = append(filtered, pg)
+		}
+	}
+	powergamers = filtered
 
 	embed := w.buildStatsEmbed(powergamers, len(items))
 
