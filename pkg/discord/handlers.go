@@ -486,11 +486,19 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		})
 	}
 
-	if len(items) == 0 && list.Type != "powergames-stats" {
+	if len(items) == 0 {
+		var emptyMessage string
+		if list.Type == "powergames-stats" {
+			emptyMessage = "📋 This list is empty. Use `/add` to add characters to track.\n\n" +
+				"📊 You can still use `/stats` to view all powergamer statistics."
+		} else {
+			emptyMessage = "📋 This list is empty. Use `/add` to add characters."
+		}
+
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "📋 This list is empty. Use `/add` to add characters.",
+				Content: emptyMessage,
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
@@ -498,33 +506,28 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	var description string
 
-	// Special handling for powergames-stats - no items needed
-	if list.Type == "powergames-stats" {
-		description = "📊 Use `/stats` to view powergamer statistics for today.\n\n" +
-			"Available filters:\n" +
-			"• **vocation**: Filter by vocation (sorcerers, druids, paladins, knights)"
-	} else {
-		for _, item := range items {
-			switch list.Type {
-			case "premium-alerts":
-				status := "⏳ Pending"
-				if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
-					if isPremium {
-						status = "✅ Premium"
-					} else {
-						status = "🔴 Free"
-					}
+	for _, item := range items {
+		switch list.Type {
+		case "premium-alerts":
+			status := "⏳ Pending"
+			if isPremium, ok := item.Metadata["premium_status"].(bool); ok {
+				if isPremium {
+					status = "✅ Premium"
+				} else {
+					status = "🔴 Free"
 				}
-				description += fmt.Sprintf("**%s**: %s\n", item.Name, status)
-			case "residence-change":
-				residence := "⏳ Pending"
-				if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
-					residence = currentResidence
-				}
-				description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
-			default:
-				description += fmt.Sprintf("• **%s**\n", item.Name)
 			}
+			description += fmt.Sprintf("**%s**: %s\n", item.Name, status)
+		case "residence-change":
+			residence := "⏳ Pending"
+			if currentResidence, ok := item.Metadata["residence"].(string); ok && currentResidence != "" {
+				residence = currentResidence
+			}
+			description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
+		case "powergames-stats":
+			description += fmt.Sprintf("• **%s**\n", item.Name)
+		default:
+			description += fmt.Sprintf("• **%s**\n", item.Name)
 		}
 	}
 
