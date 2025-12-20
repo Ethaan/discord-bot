@@ -15,6 +15,7 @@ var validListTypes = []string{
 	"premium-alerts",
 	"residence-change",
 	"powergames-stats",
+	"powergamer-stats-historical",
 }
 
 const errNotMonitoringList = "❌ This channel is not a monitoring list. Use this command in a list channel."
@@ -200,7 +201,7 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		})
 	}
 
-	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" {
+	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" && list.Type != "powergamer-stats-historical" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -274,7 +275,7 @@ func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 		})
 	}
 
-	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" {
+	if list.Type != "premium-alerts" && list.Type != "residence-change" && list.Type != "powergames-stats" && list.Type != "powergamer-stats-historical" {
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -488,9 +489,9 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	if len(items) == 0 {
 		var emptyMessage string
-		if list.Type == "powergames-stats" {
+		if list.Type == "powergames-stats" || list.Type == "powergamer-stats-historical" {
 			emptyMessage = "📋 This list is empty. Use `/add` to add characters to track.\n\n" +
-				"📊 You can still use `/stats` to view all powergamer statistics."
+				"📊 Stats will be posted automatically for tracked characters."
 		} else {
 			emptyMessage = "📋 This list is empty. Use `/add` to add characters."
 		}
@@ -524,7 +525,7 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 				residence = currentResidence
 			}
 			description += fmt.Sprintf("**%s**: %s\n", item.Name, residence)
-		case "powergames-stats":
+		case "powergames-stats", "powergamer-stats-historical":
 			description += fmt.Sprintf("• **%s**\n", item.Name)
 		default:
 			description += fmt.Sprintf("• **%s**\n", item.Name)

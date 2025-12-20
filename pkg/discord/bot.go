@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ethaan/discord-api/pkg/jobs"
 	"github.com/ethaan/discord-api/pkg/logger"
 	"github.com/ethaan/discord-api/pkg/workers"
 )
@@ -13,6 +14,7 @@ type Bot struct {
 	commands      []*Command
 	guildID       string
 	workerManager *workers.Manager
+	jobsManager   *jobs.Manager
 }
 
 func New(token, guildID, tibiaAPIURL string) (*Bot, error) {
@@ -32,6 +34,7 @@ func New(token, guildID, tibiaAPIURL string) (*Bot, error) {
 		commands:      make([]*Command, 0),
 		guildID:       guildID,
 		workerManager: workers.NewManager(session, tibiaAPIURL),
+		jobsManager:   jobs.NewManager(session, tibiaAPIURL),
 	}
 
 	return bot, nil
@@ -53,12 +56,14 @@ func (b *Bot) Start() error {
 	}
 
 	b.workerManager.Start()
+	b.jobsManager.Start()
 
 	logger.Success("Discord bot is now running")
 	return nil
 }
 
 func (b *Bot) Stop() error {
+	b.jobsManager.Stop()
 	b.workerManager.Stop()
 
 	if err := b.removeCommands(); err != nil {
