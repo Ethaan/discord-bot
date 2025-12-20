@@ -27,7 +27,7 @@ func NewResidenceWorker(session *discordgo.Session, tibiaAPIURL string) *Residen
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
 		tibiaClient:  tibia.NewClient(tibiaAPIURL),
-		pollInterval: 1 * time.Minute,
+		pollInterval: 5 * time.Minute,
 	}
 }
 
