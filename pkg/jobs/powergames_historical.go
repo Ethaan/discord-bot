@@ -47,7 +47,7 @@ func (w *PowergamesHistoricalWorker) Run(ctx context.Context) {
 	w.scheduler = scheduler
 
 	_, err = scheduler.NewJob(
-		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(12, 5, 0))),
+		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 5, 0))),
 		gocron.NewTask(func() {
 			logger.Worker("powergames-historical", "Running scheduled job at %s BRT", time.Now().In(brazilLocation).Format("15:04:05"))
 			w.postHistoricalStats()
@@ -60,7 +60,7 @@ func (w *PowergamesHistoricalWorker) Run(ctx context.Context) {
 	}
 
 	scheduler.Start()
-	logger.Worker("powergames-historical", "Scheduler started - will run daily at 12:05 PM BRT")
+	logger.Worker("powergames-historical", "Scheduler started - will run daily at 00:05 AM BRT")
 
 	<-ctx.Done()
 
