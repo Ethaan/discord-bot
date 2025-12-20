@@ -8,15 +8,15 @@ import (
 func VocationEmoji(vocation string) string {
 	switch strings.ToLower(vocation) {
 	case "elite knight", "knight":
-		return "⚔️"
+		return "[EK]"
 	case "elder druid", "druid":
-		return "🌿"
+		return "[ED]"
 	case "royal paladin", "paladin":
-		return "🏹"
+		return "[RP]"
 	case "master sorcerer", "sorcerer":
-		return "🔮"
+		return "[MS]"
 	default:
-		return "?"
+		return "[NA]"
 	}
 }
 
