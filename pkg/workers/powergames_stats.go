@@ -154,20 +154,40 @@ func (w *PowergamesStatsWorker) buildStatsEmbed(powergamers []tibia.Powergamer, 
 			description.WriteString("📊 No powergamers found for today.")
 		}
 	} else {
-		description.WriteString("```text\n")
-		description.WriteString("Lvl  Name        EXP+\n")
+		maxNameLen := 0
+		const maxAllowedNameLen = 16
 
 		for _, pg := range powergamers {
+			if len(pg.Name) > maxNameLen {
+				maxNameLen = len(pg.Name)
+			}
+		}
+		if maxNameLen > maxAllowedNameLen {
+			maxNameLen = maxAllowedNameLen
+		}
+
+		description.WriteString("```text\n")
+		description.WriteString("Voc Lvl Name")
+		description.WriteString(strings.Repeat(" ", maxNameLen-4))
+		description.WriteString(" EXP+\n")
+
+		for _, pg := range powergamers {
+			name := pg.Name
+			if len(name) > maxNameLen {
+				name = name[:maxNameLen-1] + "…"
+			}
+
 			description.WriteString(fmt.Sprintf(
-				"%-4d %-11s %s\n",
+				"%-2s %-3d %-*s %s\n",
+				tibia.VocationEmoji(pg.Vocation),
 				pg.Level,
-				pg.Name,
+				maxNameLen,
+				name,
 				formatTibiaNumber(pg.Today),
 			))
 		}
 
 		description.WriteString("```")
-
 	}
 
 	footer := fmt.Sprintf("All Vocations • Showing top %d of %d", len(powergamers), len(powergamers))
