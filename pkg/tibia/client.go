@@ -50,15 +50,15 @@ type GuildResponse struct {
 }
 
 type Powergamer struct {
-	Name           string `json:"name"`
-	Vocation       string `json:"vocation"`
-	Level          int    `json:"level"`
-	ExperienceGain int64  `json:"experience_gain"`
-	LevelGain      int    `json:"level_gain"`
+	Rank     int    `json:"rank"`
+	Name     string `json:"name"`
+	Vocation string `json:"vocation"`
+	Level    int    `json:"level"`
+	Today    int    `json:"today"`
 }
 
 type PowergamersResponse struct {
-	Powergamers []Powergamer `json:"powergamers"`
+	Powergamers []Powergamer `json:"power_gamers"`
 	Total       int          `json:"total"`
 }
 

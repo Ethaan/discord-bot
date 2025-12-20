@@ -748,8 +748,8 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	for i := 0; i < limit; i++ {
 		pg := powergamers[i]
-		description.WriteString(fmt.Sprintf("**%d. %s** (%s)\n", i+1, pg.Name, pg.Vocation))
-		description.WriteString(fmt.Sprintf("   Level: %d | Exp Gain: %d | Level Gain: %d\n\n", pg.Level, pg.ExperienceGain, pg.LevelGain))
+		description.WriteString(fmt.Sprintf("**%d. %s** (%s)\n", pg.Rank, pg.Name, pg.Vocation))
+		description.WriteString(fmt.Sprintf("   Level: %d | Gained Today: %d levels\n\n", pg.Level, pg.Today))
 	}
 
 	// Map vocation code to name for title
