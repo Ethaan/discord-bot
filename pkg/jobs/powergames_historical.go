@@ -46,7 +46,7 @@ func (w *PowergamesHistoricalWorker) Run(ctx context.Context) {
 	w.scheduler = scheduler
 
 	_, err = scheduler.NewJob(
-		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(1, 35, 0))),
+		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(12, 5, 0))),
 		gocron.NewTask(func() {
 			logger.Worker("powergames-historical", "Running scheduled job at %s BRT", time.Now().In(brazilLocation).Format("15:04:05"))
 			w.postHistoricalStats()
@@ -138,15 +138,14 @@ func (w *PowergamesHistoricalWorker) buildHistoricalStatsEmbed(powergamers []tib
 			description.WriteString("📊 No powergamers found for yesterday.")
 		}
 	} else {
-		limit := 25
-		if len(powergamers) < limit {
-			limit = len(powergamers)
-		}
+		for _, pg := range powergamers {
+			line := fmt.Sprintf(
+				"• **%s** — +%s EXP\n",
+				pg.Name,
+				formatTibiaNumber(pg.Today),
+			)
 
-		for i := 0; i < limit; i++ {
-			pg := powergamers[i]
-			description.WriteString(fmt.Sprintf("**%d. %s** (%s)\n", pg.Rank, pg.Name, pg.Vocation))
-			description.WriteString(fmt.Sprintf("   Level: %d | Exp Gained: %s\n\n", pg.Level, formatTibiaNumber(pg.Today)))
+			description.WriteString(line)
 		}
 	}
 
