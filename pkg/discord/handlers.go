@@ -500,9 +500,8 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	// Special handling for powergames-stats - no items needed
 	if list.Type == "powergames-stats" {
-		description = "📊 Use `/stats` to view powergamer statistics.\n\n" +
+		description = "📊 Use `/stats` to view powergamer statistics for today.\n\n" +
 			"Available filters:\n" +
-			"• **days**: Choose time period (today, last2days, etc.)\n" +
 			"• **vocation**: Filter by vocation (sorcerers, druids, paladins, knights)"
 	} else {
 		for _, item := range items {
@@ -628,24 +627,8 @@ func handleAddExpLock(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 func StatsCommand() *Command {
 	return &Command{
 		Name:        "stats",
-		Description: "Show powergamer statistics",
+		Description: "Show powergamer statistics for today",
 		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "days",
-				Description: "Time period (default: today)",
-				Required:    false,
-				Choices: []*discordgo.ApplicationCommandOptionChoice{
-					{Name: "Today", Value: "today"},
-					{Name: "Last Day", Value: "lastday"},
-					{Name: "Last 2 Days", Value: "last2days"},
-					{Name: "Last 3 Days", Value: "last3days"},
-					{Name: "Last 4 Days", Value: "last4days"},
-					{Name: "Last 5 Days", Value: "last5days"},
-					{Name: "Last 6 Days", Value: "last6days"},
-					{Name: "Last 7 Days", Value: "last7days"},
-				},
-			},
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "vocation",
@@ -705,24 +688,19 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		optionMap[opt.Name] = opt
 	}
 
-	days := "today"
-	if daysOpt, ok := optionMap["days"]; ok {
-		days = daysOpt.StringValue()
-	}
-
 	vocation := ""
 	if vocationOpt, ok := optionMap["vocation"]; ok {
 		vocation = vocationOpt.StringValue()
 	}
 
-	// Fetch powergamers data
+	// Fetch powergamers data (always use "today")
 	tibiaAPIURL := os.Getenv("TIBIA_API_URL")
 	if tibiaAPIURL == "" {
 		tibiaAPIURL = "http://localhost:8080"
 	}
 
 	tibiaClient := tibia.NewClient(tibiaAPIURL)
-	powergamers, err := tibiaClient.GetPowergamers(days, vocation, true)
+	powergamers, err := tibiaClient.GetPowergamers("today", vocation, true)
 	if err != nil {
 		content := fmt.Sprintf("❌ Failed to fetch powergamer statistics: %v", err)
 		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
@@ -786,29 +764,8 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		vocationName = "Knights"
 	}
 
-	// Map days to readable name
-	daysName := days
-	switch days {
-	case "today":
-		daysName = "Today"
-	case "lastday":
-		daysName = "Last Day"
-	case "last2days":
-		daysName = "Last 2 Days"
-	case "last3days":
-		daysName = "Last 3 Days"
-	case "last4days":
-		daysName = "Last 4 Days"
-	case "last5days":
-		daysName = "Last 5 Days"
-	case "last6days":
-		daysName = "Last 6 Days"
-	case "last7days":
-		daysName = "Last 7 Days"
-	}
-
 	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("📊 Powergamer Statistics - %s", daysName),
+		Title:       "📊 Powergamer Statistics - Today",
 		Description: description.String(),
 		Color:       0xFFD700, // Gold color
 		Footer: &discordgo.MessageEmbedFooter{
