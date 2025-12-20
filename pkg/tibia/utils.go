@@ -7,16 +7,16 @@ import (
 
 func VocationEmoji(vocation string) string {
 	switch strings.ToLower(vocation) {
-	case "master sorcerer", "sorcerer":
-		return "🧙‍♂️"
 	case "elder druid", "druid":
-		return "🌿"
+		return "<:paralyze:1451811045424369715>"
+	case "master sorcerer", "sorcerer":
+		return "<:sd:1451812855576920186>"
 	case "royal paladin", "paladin":
-		return "🏹"
+		return "<:crossbow:1451811296667369616>"
 	case "elite knight", "knight":
-		return "⚔️"
+		return "<:magicsword:1451811399545258014>"
 	default:
-		return "❓"
+		return ""
 	}
 }
 
