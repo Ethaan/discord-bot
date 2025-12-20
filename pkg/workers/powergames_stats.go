@@ -147,24 +147,27 @@ func (w *PowergamesStatsWorker) buildStatsEmbed(powergamers []tibia.Powergamer, 
 	if len(powergamers) == 0 {
 		if listItemCount > 0 {
 			description.WriteString(fmt.Sprintf(
-				"📊 No powergamers found.\n\nNone of the %d characters in your list were in yesterday's powergamer rankings.",
+				"📊 No powergamers found.\n\nNone of the %d characters in your list were in today's powergamer rankings.",
 				listItemCount,
 			))
 		} else {
-			description.WriteString("📊 No powergamers found for yesterday.")
+			description.WriteString("📊 No powergamers found for today.")
 		}
 	} else {
-		for i, pg := range powergamers {
-			if i > 0 {
-				description.WriteString(", ")
-			}
+		description.WriteString("```text\n")
+		description.WriteString("Lvl  Name        EXP+\n")
 
+		for _, pg := range powergamers {
 			description.WriteString(fmt.Sprintf(
-				"**%s** +%s",
+				"%-4d %-11s %s\n",
+				pg.Level,
 				pg.Name,
 				formatTibiaNumber(pg.Today),
 			))
 		}
+
+		description.WriteString("```")
+
 	}
 
 	footer := fmt.Sprintf("All Vocations • Showing top %d of %d", len(powergamers), len(powergamers))

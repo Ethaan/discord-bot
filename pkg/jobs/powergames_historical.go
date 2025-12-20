@@ -140,17 +140,19 @@ func (w *PowergamesHistoricalWorker) buildHistoricalStatsEmbed(powergamers []tib
 			description.WriteString("📊 No powergamers found for yesterday.")
 		}
 	} else {
-		for i, pg := range powergamers {
-			if i > 0 {
-				description.WriteString(", ")
-			}
+		description.WriteString("```text\n")
+		description.WriteString("Lvl  Name        EXP+\n")
 
+		for _, pg := range powergamers {
 			description.WriteString(fmt.Sprintf(
-				"**%s** +%s",
+				"%-4d %-11s %s\n",
+				pg.Level,
 				pg.Name,
 				formatTibiaNumber(pg.Today),
 			))
 		}
+
+		description.WriteString("```")
 	}
 
 	footer := fmt.Sprintf("All Vocations • Showing top %d of %d", len(powergamers), len(powergamers))
