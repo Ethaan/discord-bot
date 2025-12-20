@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ethaan/discord-api/pkg/ascii"
 	"github.com/ethaan/discord-api/pkg/database"
 	"github.com/ethaan/discord-api/pkg/logger"
 	"github.com/ethaan/discord-api/pkg/repositories"
@@ -154,39 +155,8 @@ func (w *PowergamesStatsWorker) buildStatsEmbed(powergamers []tibia.Powergamer, 
 			description.WriteString("📊 No powergamers found for today.")
 		}
 	} else {
-		maxNameLen := 0
-		const maxAllowedNameLen = 16
-
-		for _, pg := range powergamers {
-			if len(pg.Name) > maxNameLen {
-				maxNameLen = len(pg.Name)
-			}
-		}
-		if maxNameLen > maxAllowedNameLen {
-			maxNameLen = maxAllowedNameLen
-		}
-
 		description.WriteString("```text\n")
-		description.WriteString("Voc Lvl Name")
-		description.WriteString(strings.Repeat(" ", maxNameLen-4))
-		description.WriteString(" EXP+\n")
-
-		for _, pg := range powergamers {
-			name := pg.Name
-			if len(name) > maxNameLen {
-				name = name[:maxNameLen-1] + "…"
-			}
-
-			description.WriteString(fmt.Sprintf(
-				"%-2s %-3d %-*s %s\n",
-				tibia.VocationEmoji(pg.Vocation),
-				pg.Level,
-				maxNameLen,
-				name,
-				formatTibiaNumber(pg.Today),
-			))
-		}
-
+		description.WriteString(ascii.BuildTextTableForPowergamers(powergamers))
 		description.WriteString("```")
 	}
 
