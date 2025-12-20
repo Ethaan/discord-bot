@@ -18,7 +18,7 @@ func BuildTextTableForPowergamers(powergamers []tibia.Powergamer) string {
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
 
-	table.Header("Lvl", "Name", "EXP+")
+	table.Header("Lvl", "Name", "EXP+", "Vocation")
 
 	// add rows
 	for _, pg := range powergamers {
@@ -26,6 +26,7 @@ func BuildTextTableForPowergamers(powergamers []tibia.Powergamer) string {
 			fmt.Sprintf("%d", pg.Level),
 			pg.Name,
 			tibia.FormatTibiaNumber(pg.Today),
+			tibia.VocationEmoji(pg.Vocation),
 		})
 	}
 
