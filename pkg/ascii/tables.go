@@ -20,8 +20,9 @@ func BuildTextTableForPowergamers(powergamers []tibia.Powergamer) string {
 
 	table.Header("Lvl", "Name", "EXP+", "Vocation")
 
-	// add rows
+	totalExp := 0
 	for _, pg := range powergamers {
+		totalExp = totalExp + pg.Today
 		table.Append([]string{
 			fmt.Sprintf("%d", pg.Level),
 			pg.Name,
@@ -29,6 +30,13 @@ func BuildTextTableForPowergamers(powergamers []tibia.Powergamer) string {
 			tibia.VocationEmoji(pg.Vocation),
 		})
 	}
+
+	table.Footer([]string{
+		"",
+		"Total EXP",
+		tibia.FormatTibiaNumber(totalExp),
+		"",
+	})
 
 	table.Render()
 	return buf.String()
