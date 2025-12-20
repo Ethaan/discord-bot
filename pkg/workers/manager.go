@@ -24,6 +24,7 @@ func NewManager(session *discordgo.Session, tibiaAPIURL string) *Manager {
 		workers: []Worker{
 			NewPremiumWorker(session, tibiaAPIURL),
 			NewResidenceWorker(session, tibiaAPIURL),
+			NewPowergamesStatsWorker(session, tibiaAPIURL),
 		},
 	}
 }

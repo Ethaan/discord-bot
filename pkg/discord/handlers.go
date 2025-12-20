@@ -749,7 +749,7 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	for i := 0; i < limit; i++ {
 		pg := powergamers[i]
 		description.WriteString(fmt.Sprintf("**%d. %s** (%s)\n", pg.Rank, pg.Name, pg.Vocation))
-		description.WriteString(fmt.Sprintf("   Level: %d | Gained Today: %d levels\n\n", pg.Level, pg.Today))
+		description.WriteString(fmt.Sprintf("   Level: %d | Exp Gained: %s\n\n", pg.Level, formatTibiaNumber(pg.Today)))
 	}
 
 	// Map vocation code to name for title
@@ -781,4 +781,23 @@ func handleStats(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	})
 
 	return err
+}
+
+// formatTibiaNumber formats numbers in Tibia style (k for thousands, kk for millions)
+func formatTibiaNumber(n int) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	} else if n < 1000000 {
+		// Format as k
+		if n%1000 == 0 {
+			return fmt.Sprintf("%dk", n/1000)
+		}
+		return fmt.Sprintf("%.1fk", float64(n)/1000.0)
+	} else {
+		// Format as kk
+		if n%1000000 == 0 {
+			return fmt.Sprintf("%dkk", n/1000000)
+		}
+		return fmt.Sprintf("%.1fkk", float64(n)/1000000.0)
+	}
 }
