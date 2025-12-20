@@ -57,6 +57,11 @@ type Powergamer struct {
 	LevelGain      int    `json:"level_gain"`
 }
 
+type PowergamersResponse struct {
+	Powergamers []Powergamer `json:"powergamers"`
+	Total       int          `json:"total"`
+}
+
 func (c *Client) GetCharacter(name string) (*Character, error) {
 	url := fmt.Sprintf("%s/characters/%s", c.baseURL, name)
 
@@ -125,10 +130,10 @@ func (c *Client) GetPowergamers(list, vocation string, includeAll bool) ([]Power
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
 
-	var powergamers []Powergamer
-	if err := json.NewDecoder(resp.Body).Decode(&powergamers); err != nil {
+	var response PowergamersResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return powergamers, nil
+	return response.Powergamers, nil
 }
