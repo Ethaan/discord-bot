@@ -46,7 +46,7 @@ func (w *PowergamesHistoricalWorker) Run(ctx context.Context) {
 	w.scheduler = scheduler
 
 	_, err = scheduler.NewJob(
-		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(1, 25, 0))),
+		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(1, 35, 0))),
 		gocron.NewTask(func() {
 			logger.Worker("powergames-historical", "Running scheduled job at %s BRT", time.Now().In(brazilLocation).Format("15:04:05"))
 			w.postHistoricalStats()
@@ -96,7 +96,7 @@ func (w *PowergamesHistoricalWorker) postChannelStats(list *database.List) error
 		return nil
 	}
 
-	powergamers, err := w.tibiaClient.GetPowergamers("lastday", "", true)
+	powergamers, err := w.tibiaClient.GetPowergamers("lastday", "", false)
 	if err != nil {
 		return fmt.Errorf("failed to fetch powergamers: %w", err)
 	}

@@ -80,7 +80,7 @@ func (w *PowergamesStatsWorker) updateChannelStats(list *database.List) error {
 		return nil
 	}
 
-	powergamers, err := w.tibiaClient.GetPowergamers("today", "", true)
+	powergamers, err := w.tibiaClient.GetPowergamers("today", "", false)
 	if err != nil {
 		return fmt.Errorf("failed to fetch powergamers: %w", err)
 	}
