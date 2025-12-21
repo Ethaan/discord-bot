@@ -122,7 +122,7 @@ func (w *ResidenceWorker) sendNotification(list *database.List, item *database.L
 	embed := &discordgo.MessageEmbed{
 		Title:       "🏠 Residence Changed",
 		Description: fmt.Sprintf("**%s** has moved to a new city!", item.Name),
-		Color:       0x3498DB, // Blue
+		Color:       0x3498DB,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Previous Residence",

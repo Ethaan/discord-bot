@@ -34,6 +34,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := database.InitializeGuildConfig(cfg.DiscordGuildID, cfg.ParentCategoryID, nil); err != nil {
+		logger.Error("Failed to initialize guild config: %v", err)
+		os.Exit(1)
+	}
+
 	bot, err := discord.New(cfg.DiscordToken, cfg.DiscordGuildID, cfg.TibiaAPIURL)
 	if err != nil {
 		logger.Error("Failed to create Discord bot: %v", err)
@@ -53,6 +58,12 @@ func main() {
 	if err := bot.Start(); err != nil {
 		logger.Error("Failed to start Discord bot: %v", err)
 		os.Exit(1)
+	}
+
+	// Attempt to migrate existing channels to the configured category
+	if err := bot.MigrateListChannels(); err != nil {
+		logger.Warn("Failed to migrate list channels: %v", err)
+		logger.Info("You can manually move channels by dragging them in Discord")
 	}
 
 	logger.Info("Bot is running. Press CTRL-C to exit")

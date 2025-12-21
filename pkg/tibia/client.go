@@ -15,7 +15,7 @@ type Client struct {
 func NewClient(baseURL string) *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: 45 * time.Second, // Allow time for multi-page scraping (10 pages * 3s each + buffer)
+			Timeout: 45 * time.Second,
 		},
 		baseURL: baseURL,
 	}
@@ -104,10 +104,6 @@ func (c *Client) GetGuildMembers(guildID int) (*GuildResponse, error) {
 	return &guild, nil
 }
 
-// GetPowergamers fetches powergamers list from the API
-// list: "today", "lastday", "last2days", etc. (default: "today")
-// vocation: "", "0" (no vocation), "1" (sorcerers), "2" (druids), "3" (paladins), "4" (knights) (default: "")
-// includeAll: if true, fetches all pages; if false, fetches only first page (default: false)
 func (c *Client) GetPowergamers(list, vocation string, includeAll bool) ([]Powergamer, error) {
 	if list == "" {
 		list = "today"

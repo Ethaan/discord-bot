@@ -24,13 +24,11 @@ func FormatTibiaNumber(n int) string {
 	if n < 1000 {
 		return fmt.Sprintf("%d", n)
 	} else if n < 1000000 {
-		// Format as k
 		if n%1000 == 0 {
 			return fmt.Sprintf("%dk", n/1000)
 		}
 		return fmt.Sprintf("%.1fk", float64(n)/1000.0)
 	} else {
-		// Format as kk
 		if n%1000000 == 0 {
 			return fmt.Sprintf("%dkk", n/1000000)
 		}

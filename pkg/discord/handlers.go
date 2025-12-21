@@ -332,7 +332,6 @@ func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 		return err
 	}
 
-	// Build response message
 	content := fmt.Sprintf("✅ **Batch Add Complete**\n\n"+
 		"📊 **Summary:**\n"+
 		"• Total members: %d\n"+
@@ -535,7 +534,7 @@ func handleList(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("📋 %s", list.Name),
 		Description: description,
-		Color:       0x5865F2, // Discord Blurple
+		Color:       0x5865F2,
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("List Type: %s • Total Items: %d", list.Type, len(items)),
 		},
@@ -714,23 +713,4 @@ func handleDisableEveryone(s *discordgo.Session, i *discordgo.InteractionCreate)
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})
-}
-
-// formatTibiaNumber formats numbers in Tibia style (k for thousands, kk for millions)
-func formatTibiaNumber(n int) string {
-	if n < 1000 {
-		return fmt.Sprintf("%d", n)
-	} else if n < 1000000 {
-		// Format as k
-		if n%1000 == 0 {
-			return fmt.Sprintf("%dk", n/1000)
-		}
-		return fmt.Sprintf("%.1fk", float64(n)/1000.0)
-	} else {
-		// Format as kk
-		if n%1000000 == 0 {
-			return fmt.Sprintf("%dkk", n/1000000)
-		}
-		return fmt.Sprintf("%.1fkk", float64(n)/1000000.0)
-	}
 }

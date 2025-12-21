@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Port           string
-	DocsPort       string
-	DiscordToken   string
-	DiscordGuildID string
-	TibiaAPIURL    string
-	Database       DatabaseConfig
+	Port             string
+	DocsPort         string
+	DiscordToken     string
+	DiscordGuildID   string
+	ParentCategoryID string
+	TibiaAPIURL      string
+	Database         DatabaseConfig
 }
 
 type DatabaseConfig struct {
@@ -51,12 +52,13 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Port:           getEnv("PORT", "8080"),
-		DocsPort:       getEnv("DOCS_PORT", "8081"),
-		DiscordToken:   getEnv("DISCORD_BOT_TOKEN", ""),
-		DiscordGuildID: getEnv("DISCORD_GUILD_ID", ""),
-		TibiaAPIURL:    getEnv("TIBIA_API_URL", "https://api.tibiadata.com/v4"),
-		Database:       dbConfig,
+		Port:             getEnv("PORT", "8080"),
+		DocsPort:         getEnv("DOCS_PORT", "8081"),
+		DiscordToken:     getEnv("DISCORD_BOT_TOKEN", ""),
+		DiscordGuildID:   getEnv("DISCORD_GUILD_ID", ""),
+		ParentCategoryID: getEnv("PARENT_CATEGORY_ID", ""),
+		TibiaAPIURL:      getEnv("TIBIA_API_URL", "https://api.tibiadata.com/v4"),
+		Database:         dbConfig,
 	}
 
 	return cfg, nil

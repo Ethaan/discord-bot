@@ -15,14 +15,16 @@ import (
 )
 
 type ListService struct {
-	repo     *repositories.ListRepository
-	itemRepo *repositories.ListItemRepository
+	repo       *repositories.ListRepository
+	itemRepo   *repositories.ListItemRepository
+	configRepo *repositories.GuildConfigRepository
 }
 
 func NewListService() *ListService {
 	return &ListService{
-		repo:     repositories.NewListRepository(),
-		itemRepo: repositories.NewListItemRepository(),
+		repo:       repositories.NewListRepository(),
+		itemRepo:   repositories.NewListItemRepository(),
+		configRepo: repositories.NewGuildConfigRepository(),
 	}
 }
 
@@ -45,12 +47,20 @@ func (s *ListService) CreateList(input CreateListInput) (*database.List, error) 
 
 	logger.Info("Creating channel '%s' with type '%s'", channelName, input.Type)
 
-	channel, err := input.Session.GuildChannelCreate(input.GuildID, channelName, discordgo.ChannelTypeGuildText)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create channel: %w", err)
+	guildConfig, err := s.configRepo.FindByGuildID(input.GuildID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		logger.Warn("Failed to fetch guild config: %v", err)
 	}
 
-	_, err = input.Session.ChannelEditComplex(channel.ID, &discordgo.ChannelEdit{
+	topic := input.Description
+	if topic == "" {
+		topic = fmt.Sprintf("📋 %s monitoring list", input.Type)
+	}
+
+	channelData := discordgo.GuildChannelCreateData{
+		Name:  channelName,
+		Type:  discordgo.ChannelTypeGuildText,
+		Topic: topic,
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
 			{
 				ID:   input.GuildID, // @everyone role has same ID as guild
@@ -59,23 +69,16 @@ func (s *ListService) CreateList(input CreateListInput) (*database.List, error) 
 					discordgo.PermissionReadMessageHistory,
 			},
 		},
-	})
-
-	if err != nil {
-		logger.Warn("Failed to set channel permissions: %v", err)
 	}
 
-	topic := input.Description
-	if topic == "" {
-		topic = fmt.Sprintf("📋 %s monitoring list", input.Type)
+	if guildConfig != nil && guildConfig.ListsCategoryID != "" {
+		channelData.ParentID = guildConfig.ListsCategoryID
+		logger.Info("Creating channel under category: %s", guildConfig.ListsCategoryID)
 	}
 
-	_, err = input.Session.ChannelEdit(channel.ID, &discordgo.ChannelEdit{
-		Topic: topic,
-	})
-
+	channel, err := input.Session.GuildChannelCreateComplex(input.GuildID, channelData)
 	if err != nil {
-		logger.Warn("Failed to set channel topic: %v", err)
+		return nil, fmt.Errorf("failed to create channel: %w", err)
 	}
 
 	list := &database.List{

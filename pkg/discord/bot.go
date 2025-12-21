@@ -6,6 +6,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/ethaan/discord-api/pkg/jobs"
 	"github.com/ethaan/discord-api/pkg/logger"
+	"github.com/ethaan/discord-api/pkg/services"
 	"github.com/ethaan/discord-api/pkg/workers"
 )
 
@@ -60,6 +61,11 @@ func (b *Bot) Start() error {
 
 	logger.Success("Discord bot is now running")
 	return nil
+}
+
+func (b *Bot) MigrateListChannels() error {
+	configService := services.NewGuildConfigService()
+	return configService.MigrateExistingChannels(b.guildID, b.session)
 }
 
 func (b *Bot) Stop() error {

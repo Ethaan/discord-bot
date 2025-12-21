@@ -36,3 +36,15 @@ type ListItem struct {
 func (ListItem) TableName() string {
 	return "list_items"
 }
+
+type GuildConfig struct {
+	ID              uint   `gorm:"primaryKey"`
+	GuildID         string `gorm:"uniqueIndex;not null"`
+	ListsCategoryID string `gorm:""`
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+func (GuildConfig) TableName() string {
+	return "guild_configs"
+}

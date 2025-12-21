@@ -124,11 +124,11 @@ func (w *PremiumWorker) sendNotification(list *database.List, item *database.Lis
 	var emoji string
 
 	if isPremium {
-		color = 0x00FF00 // Green
+		color = 0x00FF00
 		status = "Premium Account"
 		emoji = "✅"
 	} else {
-		color = 0xFF0000 // Red
+		color = 0xFF0000
 		status = "Free Account"
 		emoji = "🔴"
 	}
