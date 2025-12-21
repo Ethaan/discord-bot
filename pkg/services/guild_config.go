@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/ethaan/discord-api/pkg/database"
 	"github.com/ethaan/discord-api/pkg/logger"
 	"github.com/ethaan/discord-api/pkg/repositories"
 )
