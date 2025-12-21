@@ -141,8 +141,13 @@ func (w *ResidenceWorker) sendNotification(list *database.List, item *database.L
 		},
 	}
 
+	content := ""
+	if list.NotifyEveryone {
+		content = "@everyone"
+	}
+
 	_, err := w.session.ChannelMessageSendComplex(list.ChannelID, &discordgo.MessageSend{
-		Content: "@everyone",
+		Content: content,
 		Embed:   embed,
 	})
 

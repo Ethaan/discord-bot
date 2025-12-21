@@ -37,6 +37,10 @@ func (r *ListRepository) FindByType(listType string) ([]database.List, error) {
 	return lists, err
 }
 
+func (r *ListRepository) Update(list *database.List) error {
+	return r.db.Save(list).Error
+}
+
 func (r *ListRepository) Delete(list *database.List) error {
 	return r.db.Delete(list).Error
 }

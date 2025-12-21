@@ -628,6 +628,94 @@ func handleAddExpLock(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 	})
 }
 
+func EnableEveryoneCommand() *Command {
+	return &Command{
+		Name:        "enable-everyone",
+		Description: "Enable @everyone notifications for this list",
+		Handler:     handleEnableEveryone,
+	}
+}
+
+func handleEnableEveryone(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: errNotMonitoringList,
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	list.NotifyEveryone = true
+	err = listService.UpdateList(list)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("❌ Failed to update list: %v", err),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "✅ @everyone notifications enabled for this list",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
+func DisableEveryoneCommand() *Command {
+	return &Command{
+		Name:        "disable-everyone",
+		Description: "Disable @everyone notifications for this list",
+		Handler:     handleDisableEveryone,
+	}
+}
+
+func handleDisableEveryone(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: errNotMonitoringList,
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	list.NotifyEveryone = false
+	err = listService.UpdateList(list)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("❌ Failed to update list: %v", err),
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "✅ @everyone notifications disabled for this list",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
 // formatTibiaNumber formats numbers in Tibia style (k for thousands, kk for millions)
 func formatTibiaNumber(n int) string {
 	if n < 1000 {

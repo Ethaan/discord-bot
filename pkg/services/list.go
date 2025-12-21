@@ -136,6 +136,14 @@ func (s *ListService) GetListByChannelID(channelID string) (*database.List, erro
 	return list, nil
 }
 
+func (s *ListService) UpdateList(list *database.List) error {
+	if err := s.repo.Update(list); err != nil {
+		return fmt.Errorf("failed to update list: %w", err)
+	}
+	logger.Info("Updated list '%s' (ID: %d)", list.Name, list.ID)
+	return nil
+}
+
 type AddItemInput struct {
 	ListID   uint
 	Name     string

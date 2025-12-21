@@ -7,14 +7,15 @@ import (
 )
 
 type List struct {
-	ID          uint   `gorm:"primaryKey"`
-	ChannelID   string `gorm:"uniqueIndex;not null"`
-	Name        string `gorm:"not null"`
-	Description string `gorm:""`
-	Type        string `gorm:"not null"`
-	GuildID     string `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID             uint   `gorm:"primaryKey"`
+	ChannelID      string `gorm:"uniqueIndex;not null"`
+	Name           string `gorm:"not null"`
+	Description    string `gorm:""`
+	Type           string `gorm:"not null"`
+	GuildID        string `gorm:"not null"`
+	NotifyEveryone bool   `gorm:"default:false"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 func (List) TableName() string {
