@@ -37,6 +37,12 @@ func (r *ListRepository) FindByType(listType string) ([]database.List, error) {
 	return lists, err
 }
 
+func (r *ListRepository) FindByGuildID(guildID string) ([]database.List, error) {
+	var lists []database.List
+	err := r.db.Where("guild_id = ?", guildID).Find(&lists).Error
+	return lists, err
+}
+
 func (r *ListRepository) Update(list *database.List) error {
 	return r.db.Save(list).Error
 }

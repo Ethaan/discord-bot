@@ -64,16 +64,10 @@ func (s *GuildConfigService) MigrateExistingChannels(guildID string, session *di
 
 	logger.Info("Verified category '%s' - proceeding with migration", category.Name)
 
-	lists, err := s.listRepo.FindByType("")
+	// Get all lists for this guild
+	guildLists, err := s.listRepo.FindByGuildID(guildID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch lists: %w", err)
-	}
-
-	guildLists := make([]database.List, 0)
-	for _, list := range lists {
-		if list.GuildID == guildID {
-			guildLists = append(guildLists, list)
-		}
 	}
 
 	if len(guildLists) == 0 {
