@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ethaan/discord-api/pkg/ascii"
 	"github.com/ethaan/discord-api/pkg/database"
 	"github.com/ethaan/discord-api/pkg/logger"
 	"github.com/ethaan/discord-api/pkg/repositories"
@@ -802,102 +803,59 @@ func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		return err
 	}
 
-	var veryHighConfidence, highConfidence, mediumConfidence, lowConfidence []repositories.ScanResult
-
-	for _, result := range results {
-		if result.AdjacentCount >= ScanVeryHighConfidenceThreshold {
-			result.ConfidenceLevel = ConfidenceVeryHigh
-			veryHighConfidence = append(veryHighConfidence, result)
-		} else if result.AdjacentCount >= ScanHighConfidenceThreshold {
-			result.ConfidenceLevel = ConfidenceHigh
-			highConfidence = append(highConfidence, result)
-		} else if result.AdjacentCount >= ScanMediumConfidenceThreshold {
-			result.ConfidenceLevel = ConfidenceMedium
-			mediumConfidence = append(mediumConfidence, result)
-		} else if result.AdjacentCount >= ScanLowConfidenceThreshold {
-			result.ConfidenceLevel = ConfidenceLow
-			lowConfidence = append(lowConfidence, result)
-		}
-	}
-
 	var totalCharacters int64
 	err = database.DB.Model(&database.Player{}).Count(&totalCharacters).Error
 	if err != nil {
 		totalCharacters = 0
 	}
 
-	// Build embed
+	// Build embed with ASCII table
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("🔍 Scan Results: %s", characterName),
 		Color: 0x5865F2,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("📊 Analyzed %d characters in %.2fs", totalCharacters, time.Since(startTime).Seconds()),
+			Text: fmt.Sprintf("📊 Analyzed %d characters in %.2fs • Never online together", totalCharacters, time.Since(startTime).Seconds()),
 		},
 	}
 
 	if len(results) == 0 {
 		embed.Description = "✅ No related characters found based on login/logout patterns."
 	} else {
-		fields := []*discordgo.MessageEmbedField{}
+		// Generate ASCII table
+		table := ascii.BuildScanResultsTable(
+			results,
+			ScanVeryHighConfidenceThreshold,
+			ScanHighConfidenceThreshold,
+			ScanMediumConfidenceThreshold,
+		)
+		embed.Description = fmt.Sprintf("```\n%s```", table)
 
-		// Very High Confidence
-		if len(veryHighConfidence) > 0 {
-			var fieldValue strings.Builder
-			for _, r := range veryHighConfidence {
-				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
-				fieldValue.WriteString(fmt.Sprintf("• [%s](%s) - %d transitions\n", r.CharacterName, charLink, r.AdjacentCount))
+		// Add character links
+		var linksBuilder strings.Builder
+		for i, r := range results {
+			charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
+			linksBuilder.WriteString(fmt.Sprintf("[%s](%s)", r.CharacterName, charLink))
+
+			if i < len(results)-1 {
+				linksBuilder.WriteString(" • ")
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("🔴 Very High Confidence (%d+ sessions)", ScanVeryHighConfidenceThreshold),
-				Value:  fieldValue.String(),
-				Inline: false,
-			})
+
+			// Discord has limits, so break if too long
+			if linksBuilder.Len() > 900 {
+				linksBuilder.WriteString("...")
+				break
+			}
 		}
 
-		// High Confidence
-		if len(highConfidence) > 0 {
-			var fieldValue strings.Builder
-			for _, r := range highConfidence {
-				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
-				fieldValue.WriteString(fmt.Sprintf("• [%s](%s) - %d transitions\n", r.CharacterName, charLink, r.AdjacentCount))
+		if linksBuilder.Len() > 0 {
+			embed.Fields = []*discordgo.MessageEmbedField{
+				{
+					Name:   "🔗 Character Links",
+					Value:  linksBuilder.String(),
+					Inline: false,
+				},
 			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("🟠 High Confidence (%d-%d sessions)", ScanHighConfidenceThreshold, ScanVeryHighConfidenceThreshold-1),
-				Value:  fieldValue.String(),
-				Inline: false,
-			})
 		}
-
-		// Medium Confidence
-		if len(mediumConfidence) > 0 {
-			var fieldValue strings.Builder
-			for _, r := range mediumConfidence {
-				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
-				fieldValue.WriteString(fmt.Sprintf("• [%s](%s) - %d transitions\n", r.CharacterName, charLink, r.AdjacentCount))
-			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("🟡 Medium Confidence (%d-%d sessions)", ScanMediumConfidenceThreshold, ScanHighConfidenceThreshold-1),
-				Value:  fieldValue.String(),
-				Inline: false,
-			})
-		}
-
-		// Low Confidence
-		if len(lowConfidence) > 0 {
-			var fieldValue strings.Builder
-			for _, r := range lowConfidence {
-				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
-				fieldValue.WriteString(fmt.Sprintf("• [%s](%s) - %d transitions\n", r.CharacterName, charLink, r.AdjacentCount))
-			}
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   fmt.Sprintf("⚪ Low Confidence (%d-%d sessions)", ScanLowConfidenceThreshold, ScanMediumConfidenceThreshold-1),
-				Value:  fieldValue.String(),
-				Inline: false,
-			})
-		}
-
-		embed.Fields = fields
-		embed.Description = "*Never online together, adjacent login/logout patterns*"
 	}
 
 	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
