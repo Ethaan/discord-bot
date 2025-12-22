@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/ethaan/discord-api/pkg/database"
 	"github.com/ethaan/discord-api/pkg/logger"
+	"github.com/ethaan/discord-api/pkg/repositories"
 	"github.com/ethaan/discord-api/pkg/services"
 	"github.com/ethaan/discord-api/pkg/tibia"
 )
@@ -716,21 +719,166 @@ func handleDisableEveryone(s *discordgo.Session, i *discordgo.InteractionCreate)
 	})
 }
 
-func ScannCommand() *Command {
+func ScanCommand() *Command {
 	return &Command{
-		Name:        "scann",
-		Description: "Scan Character by name",
-		Handler:     handleScan,
+		Name:        "scan",
+		Description: "Scan for characters related to a target character",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "name",
+				Description: "Character name to scan",
+				Required:    true,
+			},
+		},
+		Handler: handleScan,
 	}
 }
 
 func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
-	// TODO Implement scan logic
-	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
+	channelID := i.ChannelID
+
+	listService := services.NewListService()
+	list, err := listService.GetListByChannelID(channelID)
+	if err != nil {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: errNotMonitoringList,
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	if list.Type != "scanner" {
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ This command can only be used in scanner list channels",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+	}
+
+	options := i.ApplicationCommandData().Options
+	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	for _, opt := range options {
+		optionMap[opt.Name] = opt
+	}
+
+	characterName := optionMap["name"].StringValue()
+
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "✅",
-			Flags:   discordgo.MessageFlagsEphemeral,
+			Flags: discordgo.MessageFlagsEphemeral,
 		},
 	})
+	if err != nil {
+		return err
+	}
+
+	startTime := time.Now()
+
+	sessionRepo := repositories.NewOnlineSessionRepository()
+	results, err := sessionRepo.ScanCharacter(
+		characterName,
+		ScanAdjacentWindowSeconds,
+		ScanMaxResults,
+	)
+
+	if err != nil {
+		content := fmt.Sprintf("❌ Failed to scan character: %v", err)
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	playerRepo := repositories.NewPlayerRepository()
+	player, err := playerRepo.FindByName(characterName)
+	if err != nil || player == nil {
+		content := fmt.Sprintf("❌ Character **%s** not found in database. The character may not have been tracked yet.", characterName)
+		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			Content: &content,
+		})
+		return err
+	}
+
+	var veryHighConfidence, highConfidence, mediumConfidence, lowConfidence []repositories.ScanResult
+
+	for _, result := range results {
+		if result.AdjacentCount >= ScanVeryHighConfidenceThreshold {
+			result.ConfidenceLevel = ConfidenceVeryHigh
+			veryHighConfidence = append(veryHighConfidence, result)
+		} else if result.AdjacentCount >= ScanHighConfidenceThreshold {
+			result.ConfidenceLevel = ConfidenceHigh
+			highConfidence = append(highConfidence, result)
+		} else if result.AdjacentCount >= ScanMediumConfidenceThreshold {
+			result.ConfidenceLevel = ConfidenceMedium
+			mediumConfidence = append(mediumConfidence, result)
+		} else if result.AdjacentCount >= ScanLowConfidenceThreshold {
+			result.ConfidenceLevel = ConfidenceLow
+			lowConfidence = append(lowConfidence, result)
+		}
+	}
+
+	var totalCharacters int64
+	err = database.DB.Model(&database.Player{}).Count(&totalCharacters).Error
+	if err != nil {
+		totalCharacters = 0
+	}
+
+	var responseContent strings.Builder
+	responseContent.WriteString(fmt.Sprintf("🔍 **Scanning for characters related to %s...**\n\n", characterName))
+
+	if len(results) == 0 {
+		responseContent.WriteString("✅ No related characters found based on login/logout patterns.\n\n")
+		responseContent.WriteString(fmt.Sprintf("📊 Analyzed %d characters in %.2fs", totalCharacters, time.Since(startTime).Seconds()))
+	} else {
+		if len(veryHighConfidence) > 0 {
+			responseContent.WriteString(fmt.Sprintf("🔴 **Very High Confidence (%d+ adjacent sessions):**\n", ScanVeryHighConfidenceThreshold))
+			for _, r := range veryHighConfidence {
+				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
+				responseContent.WriteString(fmt.Sprintf("  • **[%s](%s)** - %d adjacent transitions, never online together\n", r.CharacterName, charLink, r.AdjacentCount))
+			}
+			responseContent.WriteString("\n")
+		}
+
+		if len(highConfidence) > 0 {
+			responseContent.WriteString(fmt.Sprintf("🟠 **High Confidence (%d-%d adjacent sessions):**\n", ScanHighConfidenceThreshold, ScanVeryHighConfidenceThreshold-1))
+			for _, r := range highConfidence {
+				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
+				responseContent.WriteString(fmt.Sprintf("  • **[%s](%s)** - %d adjacent transitions, never online together\n", r.CharacterName, charLink, r.AdjacentCount))
+			}
+			responseContent.WriteString("\n")
+		}
+
+		if len(mediumConfidence) > 0 {
+			responseContent.WriteString(fmt.Sprintf("🟡 **Medium Confidence (%d-%d adjacent sessions):**\n", ScanMediumConfidenceThreshold, ScanHighConfidenceThreshold-1))
+			for _, r := range mediumConfidence {
+				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
+				responseContent.WriteString(fmt.Sprintf("  • **[%s](%s)** - %d adjacent transitions, never online together\n", r.CharacterName, charLink, r.AdjacentCount))
+			}
+			responseContent.WriteString("\n")
+		}
+
+		if len(lowConfidence) > 0 {
+			responseContent.WriteString(fmt.Sprintf("⚪ **Low Confidence (%d-%d adjacent sessions):**\n", ScanLowConfidenceThreshold, ScanMediumConfidenceThreshold-1))
+			for _, r := range lowConfidence {
+				charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
+				responseContent.WriteString(fmt.Sprintf("  • **[%s](%s)** - %d adjacent transitions, never online together\n", r.CharacterName, charLink, r.AdjacentCount))
+			}
+			responseContent.WriteString("\n")
+		}
+
+		responseContent.WriteString(fmt.Sprintf("📊 Analyzed %d characters in %.2fs", totalCharacters, time.Since(startTime).Seconds()))
+	}
+
+	content := responseContent.String()
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: &content,
+	})
+
+	return err
 }
