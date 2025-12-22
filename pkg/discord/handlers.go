@@ -821,7 +821,6 @@ func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	if len(results) == 0 {
 		embed.Description = "✅ No related characters found based on login/logout patterns."
 	} else {
-		// Generate ASCII table
 		table := ascii.BuildScanResultsTable(
 			results,
 			ScanVeryHighConfidenceThreshold,
@@ -829,33 +828,6 @@ func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 			ScanMediumConfidenceThreshold,
 		)
 		embed.Description = fmt.Sprintf("```\n%s```", table)
-
-		// Add character links
-		var linksBuilder strings.Builder
-		for i, r := range results {
-			charLink := fmt.Sprintf("https://miracle74.com/?subtopic=characters&name=%s", r.CharacterName)
-			linksBuilder.WriteString(fmt.Sprintf("[%s](%s)", r.CharacterName, charLink))
-
-			if i < len(results)-1 {
-				linksBuilder.WriteString(" • ")
-			}
-
-			// Discord has limits, so break if too long
-			if linksBuilder.Len() > 900 {
-				linksBuilder.WriteString("...")
-				break
-			}
-		}
-
-		if linksBuilder.Len() > 0 {
-			embed.Fields = []*discordgo.MessageEmbedField{
-				{
-					Name:   "🔗 Character Links",
-					Value:  linksBuilder.String(),
-					Inline: false,
-				},
-			}
-		}
 	}
 
 	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
