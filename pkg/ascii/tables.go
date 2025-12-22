@@ -50,7 +50,7 @@ func BuildScanResultsTable(results []repositories.ScanResult, veryHighThreshold,
 		tablewriter.WithRowAlignment(tw.AlignLeft),
 	)
 
-	table.Header("Character Name", "Link", "Transitions", "Confidence")
+	table.Header("Character Name", "Transitions", "Confidence")
 
 	for _, r := range results {
 		var confidence string
@@ -70,11 +70,8 @@ func BuildScanResultsTable(results []repositories.ScanResult, veryHighThreshold,
 			confidence = "Low"
 		}
 
-		charLink := fmt.Sprintf("miracle74.com/char/%s", r.CharacterName)
-
 		table.Append([]string{
 			r.CharacterName,
-			charLink,
 			fmt.Sprintf("%d", r.AdjacentCount),
 			fmt.Sprintf("%s %s", emoji, confidence),
 		})
