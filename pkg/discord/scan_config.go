@@ -1,7 +1,7 @@
 package discord
 
 const (
-	ScanAdjacentWindowSeconds = 300
+	ScanAdjacentWindowSeconds = 60
 
 	ScanVeryHighConfidenceThreshold = 15
 	ScanHighConfidenceThreshold     = 10
