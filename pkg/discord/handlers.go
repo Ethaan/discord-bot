@@ -770,9 +770,6 @@ func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
-		},
 	})
 	if err != nil {
 		return err
