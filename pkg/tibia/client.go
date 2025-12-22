@@ -62,6 +62,17 @@ type PowergamersResponse struct {
 	Total       int          `json:"total"`
 }
 
+type OnlinePlayer struct {
+	Name     string `json:"name"`
+	Level    int    `json:"level"`
+	Vocation string `json:"vocation"`
+	Country  string `json:"country"`
+}
+
+type WhosOnlineResponse struct {
+	Players []OnlinePlayer `json:"players"`
+}
+
 func (c *Client) GetCharacter(name string) (*Character, error) {
 	url := fmt.Sprintf("%s/characters/%s", c.baseURL, name)
 
@@ -132,4 +143,25 @@ func (c *Client) GetPowergamers(list, vocation string, includeAll bool) ([]Power
 	}
 
 	return response.Powergamers, nil
+}
+
+func (c *Client) GetWhosOnline() (*WhosOnlineResponse, error) {
+	url := fmt.Sprintf("%s/whoisonline", c.baseURL)
+
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch whos online: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	var response WhosOnlineResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &response, nil
 }

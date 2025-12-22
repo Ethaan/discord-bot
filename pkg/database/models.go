@@ -48,3 +48,29 @@ type GuildConfig struct {
 func (GuildConfig) TableName() string {
 	return "guild_configs"
 }
+
+type Player struct {
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"uniqueIndex;not null"`
+	Level     int    `gorm:""`
+	Vocation  string `gorm:""`
+	Country   string `gorm:""`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (Player) TableName() string {
+	return "players"
+}
+
+type OnlineSession struct {
+	ID        uint       `gorm:"primaryKey"`
+	PlayerID  uint       `gorm:"index:idx_player_time,idx_time_range;not null"`
+	LoginAt   time.Time  `gorm:"index:idx_player_time,idx_time_range;not null"`
+	LogoutAt  *time.Time `gorm:"index:idx_time_range"`
+	CreatedAt time.Time
+}
+
+func (OnlineSession) TableName() string {
+	return "online_sessions"
+}

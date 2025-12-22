@@ -54,6 +54,7 @@ func main() {
 	bot.RegisterCommand(discord.RemoveCommand())
 	bot.RegisterCommand(discord.EnableEveryoneCommand())
 	bot.RegisterCommand(discord.DisableEveryoneCommand())
+	bot.RegisterCommand(discord.ScannCommand())
 
 	if err := bot.Start(); err != nil {
 		logger.Error("Failed to start Discord bot: %v", err)

@@ -16,6 +16,7 @@ var validListTypes = []string{
 	"residence-change",
 	"powergames-stats",
 	"powergamer-stats-historical",
+	"scanner",
 }
 
 const errNotMonitoringList = "❌ This channel is not a monitoring list. Use this command in a list channel."
@@ -710,6 +711,25 @@ func handleDisableEveryone(s *discordgo.Session, i *discordgo.InteractionCreate)
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "✅ @everyone notifications disabled for this list",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
+func ScannCommand() *Command {
+	return &Command{
+		Name:        "scann",
+		Description: "Scan Character by name",
+		Handler:     handleScan,
+	}
+}
+
+func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	// TODO Implement scan logic
+	return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "✅",
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	})

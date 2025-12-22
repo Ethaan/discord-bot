@@ -68,6 +68,8 @@ func AutoMigrate() error {
 		&List{},
 		&ListItem{},
 		&GuildConfig{},
+		&Player{},
+		&OnlineSession{},
 	)
 
 	if err != nil {
