@@ -814,7 +814,7 @@ func handleScan(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		Title: fmt.Sprintf("🔍 Scan Results: %s", characterName),
 		Color: 0x5865F2,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("📊 Analyzed %d characters in %.2fs • Never online together", totalCharacters, time.Since(startTime).Seconds()),
+			Text: fmt.Sprintf("📊 Analyzed %d characters in %.2fs", totalCharacters, time.Since(startTime).Seconds()),
 		},
 	}
 
