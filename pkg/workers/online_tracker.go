@@ -25,7 +25,7 @@ func NewOnlineTrackerWorker(session *discordgo.Session, tibiaAPIURL string) *Onl
 		playerRepo:       repositories.NewPlayerRepository(),
 		sessionRepo:      repositories.NewOnlineSessionRepository(),
 		tibiaClient:      tibia.NewClient(tibiaAPIURL),
-		pollInterval:     30 * time.Second,
+		pollInterval:     10 * time.Second,
 		lastOnlinePlayers: make(map[string]uint),
 	}
 }
