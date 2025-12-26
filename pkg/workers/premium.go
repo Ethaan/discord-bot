@@ -27,7 +27,7 @@ func NewPremiumWorker(session *discordgo.Session, tibiaAPIURL string) *PremiumWo
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
 		tibiaClient:  tibia.NewClient(tibiaAPIURL),
-		pollInterval: 4 * time.Minute,
+		pollInterval: 1 * time.Hour,
 	}
 }
 
