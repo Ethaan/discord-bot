@@ -11,21 +11,21 @@ import (
 )
 
 type OnlineTrackerWorker struct {
-	session         *discordgo.Session
-	playerRepo      *repositories.PlayerRepository
-	sessionRepo     *repositories.OnlineSessionRepository
-	tibiaClient     *tibia.Client
-	pollInterval    time.Duration
+	session           *discordgo.Session
+	playerRepo        *repositories.PlayerRepository
+	sessionRepo       *repositories.OnlineSessionRepository
+	tibiaClient       *tibia.Client
+	pollInterval      time.Duration
 	lastOnlinePlayers map[string]uint
 }
 
 func NewOnlineTrackerWorker(session *discordgo.Session, tibiaAPIURL string) *OnlineTrackerWorker {
 	return &OnlineTrackerWorker{
-		session:          session,
-		playerRepo:       repositories.NewPlayerRepository(),
-		sessionRepo:      repositories.NewOnlineSessionRepository(),
-		tibiaClient:      tibia.NewClient(tibiaAPIURL),
-		pollInterval:     10 * time.Second,
+		session:           session,
+		playerRepo:        repositories.NewPlayerRepository(),
+		sessionRepo:       repositories.NewOnlineSessionRepository(),
+		tibiaClient:       tibia.NewClient(tibiaAPIURL),
+		pollInterval:      1 * time.Minute,
 		lastOnlinePlayers: make(map[string]uint),
 	}
 }
