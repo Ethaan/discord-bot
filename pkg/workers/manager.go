@@ -25,7 +25,7 @@ func NewManager(session *discordgo.Session, tibiaAPIURL string) *Manager {
 			NewPremiumWorker(session, tibiaAPIURL),
 			NewResidenceWorker(session, tibiaAPIURL),
 			NewPowergamesStatsWorker(session, tibiaAPIURL),
-			// NewOnlineTrackerWorker(session, tibiaAPIURL),
+			NewOnlineTrackerWorker(session, tibiaAPIURL),
 		},
 	}
 }

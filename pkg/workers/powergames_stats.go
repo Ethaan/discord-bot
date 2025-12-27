@@ -28,7 +28,7 @@ func NewPowergamesStatsWorker(session *discordgo.Session, tibiaAPIURL string) *P
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
 		tibiaClient:  tibia.NewClient(tibiaAPIURL),
-		pollInterval: 8 * time.Hour,
+		pollInterval: 1 * time.Hour,
 	}
 }
 
