@@ -10,28 +10,30 @@ import (
 	"github.com/ethaan/discord-api/pkg/tibia"
 )
 
+const onlineTrackerWorkerName = "online-tracker"
+
 type OnlineTrackerWorker struct {
-	session         *discordgo.Session
-	playerRepo      *repositories.PlayerRepository
-	sessionRepo     *repositories.OnlineSessionRepository
-	tibiaClient     *tibia.Client
-	pollInterval    time.Duration
+	session           *discordgo.Session
+	playerRepo        *repositories.PlayerRepository
+	sessionRepo       *repositories.OnlineSessionRepository
+	tibiaClient       *tibia.Client
+	pollInterval      time.Duration
 	lastOnlinePlayers map[string]uint
 }
 
 func NewOnlineTrackerWorker(session *discordgo.Session, tibiaAPIURL string) *OnlineTrackerWorker {
 	return &OnlineTrackerWorker{
-		session:          session,
-		playerRepo:       repositories.NewPlayerRepository(),
-		sessionRepo:      repositories.NewOnlineSessionRepository(),
-		tibiaClient:      tibia.NewClient(tibiaAPIURL),
-		pollInterval:     10 * time.Second,
+		session:           session,
+		playerRepo:        repositories.NewPlayerRepository(),
+		sessionRepo:       repositories.NewOnlineSessionRepository(),
+		tibiaClient:       tibia.NewClient(tibiaAPIURL),
+		pollInterval:      10 * time.Second,
 		lastOnlinePlayers: make(map[string]uint),
 	}
 }
 
 func (w *OnlineTrackerWorker) Name() string {
-	return "online-tracker"
+	return onlineTrackerWorkerName
 }
 
 func (w *OnlineTrackerWorker) Run(ctx context.Context) {
@@ -54,7 +56,7 @@ func (w *OnlineTrackerWorker) Run(ctx context.Context) {
 func (w *OnlineTrackerWorker) trackOnlinePlayers() {
 	response, err := w.tibiaClient.GetWhosOnline()
 	if err != nil {
-		logger.Worker("online-tracker", "Error fetching whos online: %v", err)
+		logger.Worker(onlineTrackerWorkerName, "Error fetching whos online: %v", err)
 		return
 	}
 
@@ -64,7 +66,7 @@ func (w *OnlineTrackerWorker) trackOnlinePlayers() {
 	for _, player := range response.Players {
 		dbPlayer, err := w.playerRepo.FindOrCreate(player.Name, player.Level, player.Vocation, player.Country)
 		if err != nil {
-			logger.Worker("online-tracker", "Error creating/updating player %s: %v", player.Name, err)
+			logger.Worker(onlineTrackerWorkerName, "Error creating/updating player %s: %v", player.Name, err)
 			continue
 		}
 
@@ -74,7 +76,7 @@ func (w *OnlineTrackerWorker) trackOnlinePlayers() {
 			activeSession, err := w.sessionRepo.FindActiveSession(dbPlayer.ID)
 			if err != nil || activeSession == nil {
 				if err := w.sessionRepo.CreateSession(dbPlayer.ID, now); err != nil {
-					logger.Worker("online-tracker", "Error creating session for %s: %v", player.Name, err)
+					logger.Worker(onlineTrackerWorkerName, "Error creating session for %s: %v", player.Name, err)
 				}
 			}
 		}
@@ -85,14 +87,14 @@ func (w *OnlineTrackerWorker) trackOnlinePlayers() {
 			activeSession, err := w.sessionRepo.FindActiveSession(playerID)
 			if err == nil && activeSession != nil {
 				if err := w.sessionRepo.CloseSession(activeSession.ID, now); err != nil {
-					logger.Worker("online-tracker", "Error closing session for %s: %v", name, err)
+					logger.Worker(onlineTrackerWorkerName, "Error closing session for %s: %v", name, err)
 				}
 			}
 		}
 	}
 
 	w.lastOnlinePlayers = currentOnline
-	logger.Worker("online-tracker", "Tracked %d online players", len(currentOnline))
+	logger.Worker(onlineTrackerWorkerName, "Tracked %d online players", len(currentOnline))
 }
 
 func (w *OnlineTrackerWorker) closeAllActiveSessions() {
@@ -101,7 +103,7 @@ func (w *OnlineTrackerWorker) closeAllActiveSessions() {
 		activeSession, err := w.sessionRepo.FindActiveSession(playerID)
 		if err == nil && activeSession != nil {
 			if err := w.sessionRepo.CloseSession(activeSession.ID, now); err != nil {
-				logger.Worker("online-tracker", "Error closing session for %s on shutdown: %v", name, err)
+				logger.Worker(onlineTrackerWorkerName, "Error closing session for %s on shutdown: %v", name, err)
 			}
 		}
 	}
