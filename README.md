@@ -6,6 +6,12 @@ Discord bot for managing hunting lists and character notifications.
 
 ---
 
+## Powered By
+
+This project uses [Neon](https://neon.com) as its serverless Postgres database provider. Neon enables us to scale our database seamlessly with features like instant branching, autoscaling, and point-in-time recovery. Learn more about [Neon's serverless Postgres platform](https://neon.com/docs/introduction).
+
+---
+
 ## Commands
 
 - `/ping` - Test bot response
@@ -23,7 +29,8 @@ git clone https://github.com/ethaan/discord-bot.git
 cd discord-bot
 
 cp .env.example .env
-# Edit .env with your Discord token and DB credentials
+# Edit .env with your Discord token and Neon database credentials
+# Get your DATABASE_URL from: https://console.neon.tech
 
 docker-compose up -d
 go run cmd/bot/main.go
@@ -44,7 +51,7 @@ fly launch --no-deploy
 
 fly secrets set DISCORD_BOT_TOKEN="..."
 fly secrets set DISCORD_GUILD_ID="..."
-fly secrets set DATABASE_URL="postgresql://..."
+fly secrets set DATABASE_URL="postgresql://..."  # Your Neon database connection string
 
 fly deploy
 ```
