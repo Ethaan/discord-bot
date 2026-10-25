@@ -21,12 +21,12 @@ type PremiumWorker struct {
 	pollInterval time.Duration
 }
 
-func NewPremiumWorker(session *discordgo.Session, tibiaAPIURL string) *PremiumWorker {
+func NewPremiumWorker(session *discordgo.Session, tibiaAPIURL, tibiaProxyURL string) *PremiumWorker {
 	return &PremiumWorker{
 		session:      session,
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
-		tibiaClient:  tibia.NewClient(tibiaAPIURL),
+		tibiaClient:  tibia.NewClient(tibiaAPIURL, tibiaProxyURL),
 		pollInterval: 30 * time.Second,
 	}
 }

@@ -23,12 +23,12 @@ type PowergamesHistoricalWorker struct {
 	scheduler   gocron.Scheduler
 }
 
-func NewPowergamesHistoricalWorker(session *discordgo.Session, tibiaAPIURL string) *PowergamesHistoricalWorker {
+func NewPowergamesHistoricalWorker(session *discordgo.Session, tibiaAPIURL, tibiaProxyURL string) *PowergamesHistoricalWorker {
 	return &PowergamesHistoricalWorker{
 		session:     session,
 		listRepo:    repositories.NewListRepository(),
 		itemRepo:    repositories.NewListItemRepository(),
-		tibiaClient: tibia.NewClient(tibiaAPIURL),
+		tibiaClient: tibia.NewClient(tibiaAPIURL, tibiaProxyURL),
 	}
 }
 

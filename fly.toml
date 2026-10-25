@@ -10,7 +10,8 @@ primary_region = 'iad'
 
 [env]
   DB_SSLMODE = 'require'
-  TIBIA_API_URL = 'https://miracle74-api.fly.dev'
+  TIBIA_API_URL = 'https://api.tibiadata.com/v5'
+  TIBIA_PROXY_API_URL = 'https://miracle74-api.fly.dev'
 
 # Discord bots are background workers - no HTTP service needed
 [processes]

@@ -15,6 +15,7 @@ type Config struct {
 	DiscordGuildID   string
 	ParentCategoryID string
 	TibiaAPIURL      string
+	TibiaProxyAPIURL string
 	Database         DatabaseConfig
 }
 
@@ -57,7 +58,8 @@ func Load() (*Config, error) {
 		DiscordToken:     getEnv("DISCORD_BOT_TOKEN", ""),
 		DiscordGuildID:   getEnv("DISCORD_GUILD_ID", ""),
 		ParentCategoryID: getEnv("PARENT_CATEGORY_ID", ""),
-		TibiaAPIURL:      getEnv("TIBIA_API_URL", "https://api.tibiadata.com/v4"),
+		TibiaAPIURL:      getEnv("TIBIA_API_URL", "https://api.tibiadata.com/v5"),
+		TibiaProxyAPIURL: getEnv("TIBIA_PROXY_API_URL", "http://localhost:8080"),
 		Database:         dbConfig,
 	}
 

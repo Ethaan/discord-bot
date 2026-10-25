@@ -4,20 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
 type Client struct {
-	httpClient *http.Client
-	baseURL    string
+	httpClient   *http.Client
+	baseURL      string
+	proxyBaseURL string
 }
 
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL, proxyBaseURL string) *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: 45 * time.Second,
 		},
-		baseURL: baseURL,
+		baseURL:      strings.TrimRight(baseURL, "/"),
+		proxyBaseURL: strings.TrimRight(proxyBaseURL, "/"),
 	}
 }
 
@@ -73,10 +77,28 @@ type WhosOnlineResponse struct {
 	Players []OnlinePlayer `json:"players"`
 }
 
-func (c *Client) GetCharacter(name string) (*Character, error) {
-	url := fmt.Sprintf("%s/characters/%s", c.baseURL, name)
+type characterResponse struct {
+	Character struct {
+		Character struct {
+			Name      string `json:"name"`
+			Sex       string `json:"sex"`
+			Vocation  string `json:"vocation"`
+			Level     int    `json:"level"`
+			Residence string `json:"residence"`
+			Guild     struct {
+				Name string `json:"name"`
+				Rank string `json:"rank"`
+			} `json:"guild"`
+			LastLogin     string `json:"last_login"`
+			AccountStatus string `json:"account_status"`
+		} `json:"character"`
+	} `json:"character"`
+}
 
-	resp, err := c.httpClient.Get(url)
+func (c *Client) GetCharacter(name string) (*Character, error) {
+	endpoint := fmt.Sprintf("%s/character/%s", c.baseURL, url.PathEscape(name))
+
+	resp, err := c.httpClient.Get(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch character: %w", err)
 	}
@@ -86,18 +108,29 @@ func (c *Client) GetCharacter(name string) (*Character, error) {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
 
-	var character Character
-	if err := json.NewDecoder(resp.Body).Decode(&character); err != nil {
+	var response characterResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &character, nil
+	data := response.Character.Character
+	return &Character{
+		Name:      data.Name,
+		Sex:       data.Sex,
+		Vocation:  data.Vocation,
+		Level:     data.Level,
+		Residence: data.Residence,
+		Guild:     data.Guild.Name,
+		GuildRank: data.Guild.Rank,
+		LastLogin: data.LastLogin,
+		IsPremium: data.AccountStatus == "Premium Account",
+	}, nil
 }
 
 func (c *Client) GetGuildMembers(guildID int) (*GuildResponse, error) {
-	url := fmt.Sprintf("%s/guilds/%d", c.baseURL, guildID)
+	endpoint := fmt.Sprintf("%s/guilds/%d", c.proxyBaseURL, guildID)
 
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.httpClient.Get(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch guild: %w", err)
 	}
@@ -125,9 +158,9 @@ func (c *Client) GetPowergamers(list, vocation string, includeAll bool) ([]Power
 		includeAllStr = "true"
 	}
 
-	url := fmt.Sprintf("%s/powergamers?list=%s&include_all=%s&vocation=%s", c.baseURL, list, includeAllStr, vocation)
+	endpoint := fmt.Sprintf("%s/powergamers?list=%s&include_all=%s&vocation=%s", c.proxyBaseURL, list, includeAllStr, vocation)
 
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.httpClient.Get(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch powergamers: %w", err)
 	}
@@ -146,9 +179,9 @@ func (c *Client) GetPowergamers(list, vocation string, includeAll bool) ([]Power
 }
 
 func (c *Client) GetWhosOnline() (*WhosOnlineResponse, error) {
-	url := fmt.Sprintf("%s/whoisonline", c.baseURL)
+	endpoint := fmt.Sprintf("%s/whoisonline", c.proxyBaseURL)
 
-	resp, err := c.httpClient.Get(url)
+	resp, err := c.httpClient.Get(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch whos online: %w", err)
 	}
