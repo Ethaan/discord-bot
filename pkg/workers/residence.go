@@ -21,12 +21,12 @@ type ResidenceWorker struct {
 	pollInterval time.Duration
 }
 
-func NewResidenceWorker(session *discordgo.Session, tibiaAPIURL string) *ResidenceWorker {
+func NewResidenceWorker(session *discordgo.Session, tibiaAPIURL, tibiaProxyURL string) *ResidenceWorker {
 	return &ResidenceWorker{
 		session:      session,
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
-		tibiaClient:  tibia.NewClient(tibiaAPIURL),
+		tibiaClient:  tibia.NewClient(tibiaAPIURL, tibiaProxyURL),
 		pollInterval: 30 * time.Second,
 	}
 }

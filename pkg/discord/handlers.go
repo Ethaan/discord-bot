@@ -2,7 +2,6 @@ package discord
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -249,7 +248,7 @@ func handleAdd(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	})
 }
 
-func AddByGuildCommand() *Command {
+func AddByGuildCommand(tibiaAPIURL, tibiaProxyURL string) *Command {
 	return &Command{
 		Name:        "add-by-guild",
 		Description: "Add all members from a guild to this monitoring list",
@@ -261,11 +260,13 @@ func AddByGuildCommand() *Command {
 				Required:    true,
 			},
 		},
-		Handler: handleAddByGuild,
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+			return handleAddByGuild(tibiaAPIURL, tibiaProxyURL, s, i)
+		},
 	}
 }
 
-func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func handleAddByGuild(tibiaAPIURL, tibiaProxyURL string, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	channelID := i.ChannelID
 
 	listService := services.NewListService()
@@ -308,12 +309,7 @@ func handleAddByGuild(s *discordgo.Session, i *discordgo.InteractionCreate) erro
 		return err
 	}
 
-	tibiaAPIURL := os.Getenv("TIBIA_API_URL")
-	if tibiaAPIURL == "" {
-		tibiaAPIURL = "http://localhost:8080"
-	}
-
-	tibiaClient := tibia.NewClient(tibiaAPIURL)
+	tibiaClient := tibia.NewClient(tibiaAPIURL, tibiaProxyURL)
 	guild, err := tibiaClient.GetGuildMembers(guildID)
 	if err != nil {
 		content := fmt.Sprintf("❌ Failed to fetch guild members: %v", err)

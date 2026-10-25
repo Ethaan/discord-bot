@@ -19,13 +19,13 @@ type Manager struct {
 	cancel  context.CancelFunc
 }
 
-func NewManager(session *discordgo.Session, tibiaAPIURL string) *Manager {
+func NewManager(session *discordgo.Session, tibiaAPIURL, tibiaProxyURL string) *Manager {
 	return &Manager{
 		workers: []Worker{
-			NewPremiumWorker(session, tibiaAPIURL),
-			NewResidenceWorker(session, tibiaAPIURL),
-			NewPowergamesStatsWorker(session, tibiaAPIURL),
-			NewOnlineTrackerWorker(session, tibiaAPIURL),
+			NewPremiumWorker(session, tibiaAPIURL, tibiaProxyURL),
+			NewResidenceWorker(session, tibiaAPIURL, tibiaProxyURL),
+			NewPowergamesStatsWorker(session, tibiaAPIURL, tibiaProxyURL),
+			NewOnlineTrackerWorker(session, tibiaAPIURL, tibiaProxyURL),
 		},
 	}
 }

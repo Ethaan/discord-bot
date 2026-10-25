@@ -18,7 +18,7 @@ type Bot struct {
 	jobsManager   *jobs.Manager
 }
 
-func New(token, guildID, tibiaAPIURL string) (*Bot, error) {
+func New(token, guildID, tibiaAPIURL, tibiaProxyURL string) (*Bot, error) {
 	if token == "" {
 		return nil, fmt.Errorf("discord bot token is required")
 	}
@@ -34,8 +34,8 @@ func New(token, guildID, tibiaAPIURL string) (*Bot, error) {
 		session:       session,
 		commands:      make([]*Command, 0),
 		guildID:       guildID,
-		workerManager: workers.NewManager(session, tibiaAPIURL),
-		jobsManager:   jobs.NewManager(session, tibiaAPIURL),
+		workerManager: workers.NewManager(session, tibiaAPIURL, tibiaProxyURL),
+		jobsManager:   jobs.NewManager(session, tibiaAPIURL, tibiaProxyURL),
 	}
 
 	return bot, nil

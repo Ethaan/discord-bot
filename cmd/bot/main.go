@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	bot, err := discord.New(cfg.DiscordToken, cfg.DiscordGuildID, cfg.TibiaAPIURL)
+	bot, err := discord.New(cfg.DiscordToken, cfg.DiscordGuildID, cfg.TibiaAPIURL, cfg.TibiaProxyAPIURL)
 	if err != nil {
 		logger.Error("Failed to create Discord bot: %v", err)
 		os.Exit(1)
@@ -49,7 +49,7 @@ func main() {
 	bot.RegisterCommand(discord.CreateListCommand())
 	bot.RegisterCommand(discord.CloseListCommand())
 	bot.RegisterCommand(discord.AddCommand())
-	bot.RegisterCommand(discord.AddByGuildCommand())
+	bot.RegisterCommand(discord.AddByGuildCommand(cfg.TibiaAPIURL, cfg.TibiaProxyAPIURL))
 	bot.RegisterCommand(discord.ListCommand())
 	bot.RegisterCommand(discord.RemoveCommand())
 	bot.RegisterCommand(discord.EnableEveryoneCommand())

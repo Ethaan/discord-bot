@@ -36,6 +36,8 @@ docker-compose up -d
 go run cmd/bot/main.go
 ```
 
+`TIBIA_API_URL` points to the official TibiaData v5 API. `TIBIA_PROXY_API_URL` is the custom API used for guild-member, powergamer, and online-player lookups that are not available through TibiaData v5.
+
 Or with `mise`:
 ```bash
 mise run docker-up

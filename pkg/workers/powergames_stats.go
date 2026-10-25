@@ -22,12 +22,12 @@ type PowergamesStatsWorker struct {
 	pollInterval time.Duration
 }
 
-func NewPowergamesStatsWorker(session *discordgo.Session, tibiaAPIURL string) *PowergamesStatsWorker {
+func NewPowergamesStatsWorker(session *discordgo.Session, tibiaAPIURL, tibiaProxyURL string) *PowergamesStatsWorker {
 	return &PowergamesStatsWorker{
 		session:      session,
 		listRepo:     repositories.NewListRepository(),
 		itemRepo:     repositories.NewListItemRepository(),
-		tibiaClient:  tibia.NewClient(tibiaAPIURL),
+		tibiaClient:  tibia.NewClient(tibiaAPIURL, tibiaProxyURL),
 		pollInterval: 1 * time.Minute,
 	}
 }
